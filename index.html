@@ -485,11 +485,16 @@
 
         imagenes.forEach(img=>{
 
-            html+=`
+            
+            html += `
 
             <div class="item">
 
-                <img src="${img.url}">
+                <img
+                    src="${img.url}"
+                    class="imgNoticia"
+                    data-img="${img.url}"
+                    style="cursor:pointer;">
 
             </div>
 
@@ -530,10 +535,32 @@
             }
 
         });
+        
+        $(document).on("click", ".imgNoticia", function () {
 
+            $("#imagenGrande").attr("src", $(this).data("img"));
+
+            $("#imagenModal").modal("show");
+
+        });
     });
 
     </script>
+    <div class="modal fade" id="imagenModal" tabindex="-1">
+
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+
+        <div class="modal-content bg-transparent border-0">
+
+            <img
+                id="imagenGrande"
+                class="img-fluid rounded">
+
+        </div>
+
+    </div>
+
+</div>
 </body>
 
 </html>
