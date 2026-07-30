@@ -10762,9 +10762,9 @@ NOTICIAS
 
     width:100%;
 
-    height:500px;
+    height:auto;
 
-    object-fit:cover;
+    display:block;
 
     border-radius:16px;
 
@@ -10798,12 +10798,30 @@ NOTICIAS
 
 }
 
-@media(max-width:768px){
+#imagenModal{
 
-#noticiasCarousel img{
-
-height:280px;
+    background:rgba(0,0,0,.92);
 
 }
+
+#imagenModal .modal-content{
+
+    background:transparent;
+
+    border:none;
+
+    box-shadow:none;
+
+}
+
+#imagenGrande{
+
+    max-height:90vh;
+
+    width:auto;
+
+    margin:auto;
+
+    display:block;
 
 }
