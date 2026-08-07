@@ -128,15 +128,24 @@
                 <div class="col-lg-7">
                     <div class="section-title position-relative mb-4">
                         <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Qué Saber</h6>
-                        <h1 class="display-4">¿De qué se trata?</h1>
                     </div>
                     <p>La Iniciación Musical y el Coro de Niños constituyen el primer acercamiento a la formación artística que ofrece la Escuela Superior de Música. Esta propuesta está orientada a niños que comienzan a descubrir el mundo de la música, favoreciendo el desarrollo de la sensibilidad, la creatividad y la expresión a través de experiencias musicales compartidas.</p>
                     <p>El trayecto promueve la formación temprana, la exploración de diferentes lenguajes musicales y la detección de vocaciones, acompañando a cada estudiante en el descubrimiento de sus intereses y capacidades. La práctica coral y el aprendizaje instrumental contribuyen al desarrollo de la escucha, el trabajo colectivo y la construcción de una base musical sólida para quienes deseen continuar estudios en la institución.</p>
-                    <p>La propuesta incluye las especialidades de piano, guitarra, flauta dulce, flauta traversa, clarinete, saxofón, trompeta, violín y percusión.</p>
+                    <h2 class="mb-4">Instrumentos o Especialidades</h2>
+                    <ul>
+                        <li>Piano</li>
+                        <li>Guitarra</li>
+                        <li>Flauta dulce</li>
+                        <li>Flauta traversa</li>
+                        <li>Clarinete</li>
+                        <li>Saxofón</li>
+                        <li>Trompeta</li>
+                        <li>Violín</li>
+                        <li>Percusión</li>
+                    </ul>
                     <p> </p>
-                    <p>Destinado a: niños con 4.º grado aprobado (hasta 7.º grado).</p>
-                    <p>Duración: de 1 a 3 años. El Coro de Niños admite el ingreso a edades más tempranas y una permanencia más prolongada.</p>
-                    <p>Plan de estudios: 6 materias.</p>
+                    <p><b>Destinado a:</b> niños con 4.º grado aprobado (hasta 7.º grado).</p>
+                    <p><b>Duración:</b> de 1 a 3 años. El Coro de Niños admite el ingreso a edades más tempranas y una permanencia más prolongada.</p>
                     <div class="row pt-3 mx-0">
                         <div class="col-3 px-0">
                             <div class="bg-success text-center p-4">
@@ -168,6 +177,75 @@
         </div>
     </div>
     <!-- About End -->
+
+    <!-- Plan de Estudios Start -->
+    <div class="container-fluid py-5 curriculum-section">
+        <div class="container py-5">
+            <div class="section-title position-relative mb-4">
+                <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Caja Curricular</h6>
+
+            <div class="curriculum-year mb-5">
+                <h3 class="curriculum-year-title">1° Año</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered curriculum-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Curso</th>
+                                <th scope="col">Horas Semanales</th>
+                                <th scope="col">Régimen de Cursado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Materia</td><td><a class="curriculum-link" href="#">Práctica Instrumental 1</a></td><td>A confirmar</td><td>A confirmar</td></tr>
+                            <tr><td>Materia</td><td><a class="curriculum-link" href="#">Iniciación Musical 1</a></td><td>A confirmar</td><td>A confirmar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="curriculum-year mb-5">
+                <h3 class="curriculum-year-title">2° Año</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered curriculum-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Curso</th>
+                                <th scope="col">Horas Semanales</th>
+                                <th scope="col">Régimen de Cursado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Materia</td><td><a class="curriculum-link" href="#">Práctica Instrumental 2</a></td><td>A confirmar</td><td>A confirmar</td></tr>
+                            <tr><td>Materia</td><td><a class="curriculum-link" href="#">Iniciación Musical 2</a></td><td>A confirmar</td><td>A confirmar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="curriculum-year mb-5">
+                <h3 class="curriculum-year-title">3° Año</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered curriculum-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Curso</th>
+                                <th scope="col">Horas Semanales</th>
+                                <th scope="col">Régimen de Cursado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Materia</td><td><a class="curriculum-link" href="#">Práctica Instrumental 3</a></td><td>A confirmar</td><td>A confirmar</td></tr>
+                            <tr><td>Materia</td><td><a class="curriculum-link" href="#">Iniciación Musical 3</a></td><td>A confirmar</td><td>A confirmar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Plan de Estudios End -->
 
 
     <!-- Footer Start -->
@@ -234,6 +312,170 @@
     <script src="lib/waypoints/waypoints.min.js"></script>
     <script src="lib/counterup/counterup.min.js"></script>
     <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rules = [
+                { code: '1.01', title: 'Práctica Instrumental 1', regular: [], approved: [] },
+                { code: '1.02', title: 'Iniciación Musical 1', regular: [], approved: [] },
+                { code: '1.03', title: 'Práctica Instrumental 2', regular: [], approved: [] },
+                { code: '1.04', title: 'Iniciación Musical 2', regular: [], approved: [] },
+                { code: '1.05', title: 'Práctica Instrumental 3', regular: [], approved: [] },
+                { code: '1.06', title: 'Iniciación Musical 3', regular: [], approved: [] }
+            ];
+
+            const normalizeTitle = function (value) {
+                return value
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            };
+
+            const ruleByTitle = new Map();
+            rules.forEach(function (rule) {
+                ruleByTitle.set(normalizeTitle(rule.title), rule);
+            });
+
+            const links = document.querySelectorAll('.curriculum-link');
+            links.forEach(function (link) {
+                const row = link.closest('tr');
+                if (!row) {
+                    return;
+                }
+
+                const rule = ruleByTitle.get(normalizeTitle(link.textContent));
+                if (!rule) {
+                    return;
+                }
+
+                row.dataset.code = rule.code;
+                row.dataset.regular = rule.regular.join(',');
+                row.dataset.approved = rule.approved.join(',');
+
+                if (!link.querySelector('.curriculum-course-code')) {
+                    const codeBadge = document.createElement('span');
+                    codeBadge.className = 'curriculum-course-code';
+                    codeBadge.textContent = rule.code;
+                    link.prepend(codeBadge);
+                }
+            });
+
+            const rowsByCode = new Map();
+            document.querySelectorAll('.curriculum-table tbody tr[data-code]').forEach(function (row) {
+                rowsByCode.set(row.dataset.code, row);
+            });
+
+            let pinnedCode = null;
+
+            const clearHighlights = function () {
+                document.querySelectorAll('.curriculum-row-active, .curriculum-row-regular, .curriculum-row-approved').forEach(function (row) {
+                    row.classList.remove('curriculum-row-active', 'curriculum-row-regular', 'curriculum-row-approved');
+                });
+            };
+
+            const applyHighlights = function (rule) {
+                clearHighlights();
+
+                const currentRow = rowsByCode.get(rule.code);
+                if (currentRow) {
+                    currentRow.classList.add('curriculum-row-active');
+                }
+
+                rule.regular.forEach(function (code) {
+                    const row = rowsByCode.get(code);
+                    if (row) {
+                        row.classList.add('curriculum-row-regular');
+                    }
+                });
+
+                rule.approved.forEach(function (code) {
+                    const row = rowsByCode.get(code);
+                    if (row) {
+                        row.classList.remove('curriculum-row-regular');
+                        row.classList.add('curriculum-row-approved');
+                    }
+                });
+            };
+
+            const togglePinnedSelection = function (rule) {
+                if (pinnedCode === rule.code) {
+                    pinnedCode = null;
+                    clearHighlights();
+                    return;
+                }
+
+                pinnedCode = rule.code;
+                applyHighlights(rule);
+            };
+
+            links.forEach(function (link) {
+                const row = link.closest('tr');
+                if (!row || !row.dataset.code) {
+                    return;
+                }
+
+                const rule = rules.find(function (item) {
+                    return item.code === row.dataset.code;
+                });
+                if (!rule) {
+                    return;
+                }
+
+                link.addEventListener('mouseenter', function () {
+                    if (!pinnedCode) {
+                        applyHighlights(rule);
+                    }
+                });
+
+                link.addEventListener('focus', function () {
+                    if (!pinnedCode) {
+                        applyHighlights(rule);
+                    }
+                });
+
+                link.addEventListener('mouseleave', function () {
+                    if (!pinnedCode) {
+                        clearHighlights();
+                    }
+                });
+
+                link.addEventListener('blur', function () {
+                    if (!pinnedCode) {
+                        clearHighlights();
+                    }
+                });
+
+                link.addEventListener('click', function (event) {
+                    if (link.getAttribute('href') === '#') {
+                        event.preventDefault();
+                    }
+
+                    event.stopPropagation();
+                    togglePinnedSelection(rule);
+                });
+
+                row.addEventListener('click', function () {
+                    togglePinnedSelection(rule);
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!event.target.closest('.curriculum-link') && !event.target.closest('.curriculum-table')) {
+                    pinnedCode = null;
+                    clearHighlights();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    pinnedCode = null;
+                    clearHighlights();
+                }
+            });
+        });
+    </script>
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>

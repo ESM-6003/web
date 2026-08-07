@@ -209,7 +209,8 @@
 
             <div
                 id="noticiasCarousel"
-                class="owl-carousel owl-theme">
+                class="owl-carousel owl-theme position-relative"
+                style="padding: 0 30px;">
             </div>
 
         </div>
@@ -226,7 +227,7 @@
                 </div>
             </div>
         </div>
-        <div class="owl-carousel courses-carousel">
+        <div class="owl-carousel courses-carousel position-relative" style="padding: 0 30px;">
             <div class="courses-item position-relative">
                 <img class="img-fluid" src="img/im.jpg" alt="">
                 <div class="courses-text">
@@ -307,7 +308,7 @@
                 </div>
             </div>
         </div>
-        <div class="owl-carousel videos-carousel" id="youtubePlaylistCarousel" data-playlist-id="PLn2VcwukuczQGEJcW-QOPMCEWF8kkze4x">
+        <div class="owl-carousel videos-carousel position-relative" id="youtubePlaylistCarousel" data-playlist-id="PLn2VcwukuczQGEJcW-QOPMCEWF8kkze4x" style="padding: 0 30px;">
             <div class="courses-item position-relative youtube-video-item youtube-video-placeholder">
                 <img class="img-fluid" src="img/courses-1.jpg" alt="Videos de YouTube">
                 <div class="courses-text">
@@ -485,16 +486,11 @@
 
         imagenes.forEach(img=>{
 
-            
-            html += `
+            html+=`
 
             <div class="item">
 
-                <img
-                    src="${img.url}"
-                    class="imgNoticia"
-                    data-img="${img.url}"
-                    style="cursor:pointer;">
+                <img src="${img.url}">
 
             </div>
 
@@ -512,9 +508,14 @@
 
             margin:25,
 
-            dots:true,
+            dots:false,
 
-            nav:false,
+            nav:true,
+
+            navText:[
+                '<i class="fa fa-angle-left" aria-hidden="true"></i>',
+                '<i class="fa fa-angle-right" aria-hidden="true"></i>'
+            ],
 
             autoplay:true,
 
@@ -535,32 +536,10 @@
             }
 
         });
-        
-        $(document).on("click", ".imgNoticia", function () {
 
-            $("#imagenGrande").attr("src", $(this).data("img"));
-
-            $("#imagenModal").modal("show");
-
-        });
     });
 
     </script>
-    <div class="modal fade" id="imagenModal" tabindex="-1">
-
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-
-        <div class="modal-content bg-transparent border-0">
-
-            <img
-                id="imagenGrande"
-                class="img-fluid rounded">
-
-        </div>
-
-    </div>
-
-</div>
 </body>
 
 </html>

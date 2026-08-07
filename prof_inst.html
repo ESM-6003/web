@@ -130,10 +130,38 @@
                         <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Qué Saber</h6>
                         <h1 class="display-4">¿De qué se trata?</h1>
                     </div>
-                    <p>El Profesorado Superior de Música con Orientación en Instrumento forma músicos y docentes con una sólida preparación artística, pedagógica y profesional. Su propuesta académica combina el estudio profundo del instrumento con una formación integral en educación musical, promoviendo el desarrollo de intérpretes comprometidos con la creación, la enseñanza y la vida cultural de la comunidad.</p>
-                    <p>A lo largo de cinco años de formación, los estudiantes desarrollan las competencias necesarias para el ejercicio profesional del instrumento, la enseñanza de la música en los niveles Inicial, Primario, Secundario y Superior, y la participación en orquestas, bandas, coros y diversos conjuntos vocales e instrumentales. La carrera favorece, además, una mirada amplia sobre la práctica musical, entendida como una expresión artística, educativa y social.</p>
-                    <p>La propuesta contempla una amplia diversidad de orientaciones instrumentales, entre ellas canto, piano, guitarra, flauta dulce, flauta traversa, oboe, arpa, corno francés, clarinete, trompeta, tuba, trombón, saxofón, violín, viola, violonchelo, contrabajo, bandoneón, percusión, guitarra eléctrica e instrumentos regionales andinos. Esta diversidad refleja el compromiso de la institución con una formación musical plural, capaz de dialogar con diferentes tradiciones, lenguajes y ámbitos de desempeño profesional.</p>
-                    <p>Con una trayectoria que ha contribuido a la formación de generaciones de músicos y docentes, la Escuela Superior de Música constituye un espacio de estudio, creación y crecimiento, donde la excelencia académica se integra con el compromiso por la educación pública y el desarrollo cultural de la provincia.</p>
+                    <p>El Profesorado Superior de Música con Orientación en Instrumento forma músicos y docentes con una sólida preparación artística, pedagógica y profesional. Su propuesta académica combina el <b>estudio profundo del instrumento con una formación integral en educación musical</b>, promoviendo el desarrollo de intérpretes comprometidos con la creación, la enseñanza y la vida cultural de la comunidad.</p>
+                    <p>A lo largo de <b>cinco años de formación</b>, los estudiantes desarrollan las competencias necesarias para el ejercicio profesional del instrumento, la enseñanza de la música en los niveles Inicial, Primario, Secundario y Superior, y la participación en orquestas, bandas, coros y diversos conjuntos vocales e instrumentales. La carrera favorece, además, <b>una mirada amplia sobre la práctica musical, entendida como una expresión artística, educativa y social</b>.</p>
+                    <h2>Orientaciones Instrumentales</h2>
+                    <p>La propuesta contempla una amplia diversidad de orientaciones instrumentales, entre ellas:
+                        <ul>
+                            <li>Piano</li>
+                            <li>Guitarra</li>
+                            <li>Bandoneón</li>
+                            <li>Acordeón a Piano</li>
+                            <li>Percusión</li>
+                            <li>Violín</li>
+                            <li>Viola</li>
+                            <li>Violonchelo</li>
+                            <li>Contrabajo</li>
+                            <li>Flauta Dulce</li>
+                            <li>Flauta Traversa</li>
+                            <li>Oboe</li>
+                            <li>Clarinete</li>
+                            <li>Saxofón</li>
+                            <li>Trompeta</li>
+                            <li>Trombón a Vara</li>
+                            <li>Canto</li>
+                            <li>Corno Francés</li>
+                            <li>Fagot</li>
+                            <li>Tuba</li>
+                            <li>Bajo Eléctrico</li>
+                            <li>Guitarra Eléctrica</li>
+                            <li>Teclado</li>                            
+                            <li>Instrumentos Regionales Andinos</li>
+                        </ul>
+                    <!-- <p>Esta diversidad refleja el compromiso de la institución con una formación musical plural, capaz de dialogar con diferentes tradiciones, lenguajes y ámbitos de desempeño profesional.</p>
+                    <p>Con una trayectoria que ha contribuido a la formación de generaciones de músicos y docentes, la Escuela Superior de Música constituye un espacio de estudio, creación y crecimiento, donde la excelencia académica se integra con el compromiso por la educación pública y el desarrollo cultural de la provincia.</p> -->
                     <div class="row pt-3 mx-0">
                         <div class="col-3 px-0">
                             <div class="bg-success text-center p-4">
@@ -171,7 +199,6 @@
         <div class="container py-5">
             <div class="section-title position-relative mb-4">
                 <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Plan de Estudios</h6>
-                <h1 class="display-4">Materias por año</h1>
             </div>
             <p class="mb-3">Pasá el cursor sobre una materia para ver sus correlativas. Si hacés click, la selección queda fijada para que puedas recorrer la página; hacé click otra vez en la misma materia, presioná Escape o hacé click fuera de la tabla para limpiar.</p>
             <div class="curriculum-legend" aria-label="Referencia de colores para correlativas">
@@ -511,6 +538,17 @@
                 });
             };
 
+            const togglePinnedSelection = function (rule) {
+                if (pinnedCode === rule.code) {
+                    pinnedCode = null;
+                    clearHighlights();
+                    return;
+                }
+
+                pinnedCode = rule.code;
+                applyHighlights(rule);
+            };
+
             links.forEach(function (link) {
                 const row = link.closest('tr');
                 if (!row || !row.dataset.code) {
@@ -553,14 +591,12 @@
                         event.preventDefault();
                     }
 
-                    if (pinnedCode === rule.code) {
-                        pinnedCode = null;
-                        clearHighlights();
-                        return;
-                    }
+                    event.stopPropagation();
+                    togglePinnedSelection(rule);
+                });
 
-                    pinnedCode = rule.code;
-                    applyHighlights(rule);
+                row.addEventListener('click', function () {
+                    togglePinnedSelection(rule);
                 });
             });
 
