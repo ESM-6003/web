@@ -115,6 +115,148 @@
     </div>
     <!-- Header End -->
 
+<!-- Campus Virtual Start -->
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="row align-items-center">
+
+            <!-- Columna izquierda -->
+            <div class="col-lg-5 mb-5 mb-lg-0">
+
+                <div class="section-title position-relative mb-4">
+                    <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">
+                        Campus Virtual
+                    </h6>
+                </div>
+                <div class="d-flex flex-column justify-content-start mb-4">
+                    <a class="h5 mb-3"
+                    href="https://esm-sal.infd.edu.ar/aula/acceso.cgi"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                        <i class="fa fa-angle-right text-primary mr-2"></i>
+                        Acceso al Campus Virtual
+                    </a>
+                </div>
+
+                <hr>
+
+                <h6 class="text-secondary text-uppercase mb-3">
+                    Videos Tutoriales
+                </h6>
+
+                <div class="list-group">
+
+                    <a href="#" class="list-group-item list-group-item-action active"
+                       onclick="cambiarVideo('BIkM8_KBM28', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Acceso al Campus
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('lus7-3WPKJw', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Recuperar acceso
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('fwn10dPV0EM', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Cambiar datos de Perfil 
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('x1Nbo7KS2Zk', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Participar en un foro de debate
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('PhpuPe_gwPA', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Participar en un foro
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('7mY_xuzazOc', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Enviar Mensajes desde Contactos
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('dWeMAD8xElI', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Entregar una Actividad
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('J2DRfvtChXM', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Enviar mensajes desde Mensajería
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('nR9FCnuh6Bc', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Ver Calificaciones
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action"
+                       onclick="cambiarVideo('4ZM4JcGyDOU', this); return false;">
+                        <i class="fa fa-play-circle mr-2"></i>
+                        Participar en una Wiki
+                    </a>
+
+                </div>
+
+            </div>
+
+            <!-- Columna derecha -->
+            <div class="col-lg-7">
+
+                <div class="bg-light rounded shadow-sm overflow-hidden">
+
+                    <div class="p-4 border-bottom">
+                        <h3 class="mb-2">Videos Tutoriales</h3>
+                        <p class="mb-0">
+                            Guías visuales para el acceso.
+                        </p>
+                    </div>
+
+                    <div class="embed-responsive embed-responsive-16by9">
+
+                        <iframe id="videoPlayer"
+                                class="embed-responsive-item"
+                                src="https://www.youtube.com/embed/BIkM8_KBM28"
+                                title="Videos Tutoriales"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen>
+                        </iframe>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function cambiarVideo(videoID, elemento){
+
+    document.getElementById("videoPlayer").src =
+        "https://www.youtube.com/embed/" + videoID;
+
+    document.querySelectorAll(".list-group-item").forEach(function(item){
+        item.classList.remove("active");
+    });
+
+    elemento.classList.add("active");
+}
+</script>
+<!-- Campus Virtual End -->
+
 
     <div class="container-fluid py-5 licenses-section">
         <div class="container py-5">
