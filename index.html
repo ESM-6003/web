@@ -537,9 +537,28 @@
 
         });
 
+        $(document).on('click', '#noticiasCarousel .item img', function () {
+            var src = $(this).attr('src');
+            $('#noticiasImageModal img').attr('src', src);
+            $('#noticiasImageModal').modal('show');
+        });
+
     });
 
     </script>
+
+    <div class="modal fade" id="noticiasImageModal" tabindex="-1" role="dialog" aria-labelledby="noticiasImageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body p-0 position-relative">
+                    <button type="button" class="close text-white position-absolute" data-dismiss="modal" aria-label="Cerrar" style="right: 1rem; top: 1rem; z-index: 2;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <img src="" class="img-fluid w-100" alt="Noticia" style="object-fit: contain; background: rgba(0,0,0,.95);">
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
