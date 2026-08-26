@@ -206,6 +206,43 @@
         return value;
     }
 
+    function getChannelIdFromInput(input) {
+        var value = String(input || '').trim();
+
+        if (!value) {
+            return '';
+        }
+
+        if (value.indexOf('youtube.com') !== -1 || value.indexOf('youtu.be') !== -1) {
+            try {
+                var url = new URL(value);
+                var path = (url.pathname || '').replace(/^\/+|\/+$/g, '');
+
+                if (!path) {
+                    return '';
+                }
+
+                if (path.indexOf('@') === 0) {
+                    return '';
+                }
+
+                if (path.indexOf('channel/') === 0) {
+                    return path.replace(/^channel\//, '').split('/')[0] || '';
+                }
+
+                if (path.indexOf('user/') === 0) {
+                    return '';
+                }
+
+                return url.searchParams.get('channel_id') || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        return value;
+    }
+
     function getVideoIdFromLink(link) {
         try {
             var url = new URL(link);
@@ -222,15 +259,19 @@
             return;
         }
 
+        var sourceType = String($carousel.attr('data-video-source') || '').toLowerCase();
+        var channelInput = $carousel.attr('data-channel-id');
         var playlistInput = $carousel.attr('data-playlist-id');
-        var playlistId = getPlaylistIdFromInput(playlistInput);
+        var feedType = sourceType === 'channel' ? 'channel' : 'playlist';
+        var videoId = feedType === 'channel' ? getChannelIdFromInput(channelInput || playlistInput) : getPlaylistIdFromInput(playlistInput);
 
-        if (!playlistId) {
-            renderVideosMessage('No se encontro el ID de playlist.');
+        if (!videoId) {
+            renderVideosMessage(feedType === 'channel' ? 'No se encontro el ID del canal.' : 'No se encontro el ID de playlist.');
             return;
         }
 
-        var rssUrl = 'https://www.youtube.com/feeds/videos.xml?playlist_id=' + encodeURIComponent(playlistId);
+        var feedParam = feedType === 'channel' ? 'channel_id' : 'playlist_id';
+        var rssUrl = 'https://www.youtube.com/feeds/videos.xml?' + feedParam + '=' + encodeURIComponent(videoId);
         var proxyUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(rssUrl);
 
         fetch(proxyUrl)
@@ -248,7 +289,7 @@
                 var items = data.items.slice(0, 10);
 
                 if (!items.length) {
-                    renderVideosMessage('No hay videos disponibles en esta playlist.');
+                    renderVideosMessage(feedType === 'channel' ? 'No hay videos disponibles en este canal.' : 'No hay videos disponibles en esta playlist.');
                     return;
                 }
 
@@ -275,7 +316,7 @@
                 initVideosCarousel();
             })
             .catch(function () {
-                renderVideosMessage('No fue posible cargar la playlist en este momento.');
+                renderVideosMessage(feedType === 'channel' ? 'No fue posible cargar el canal en este momento.' : 'No fue posible cargar la playlist en este momento.');
             });
     }
 
