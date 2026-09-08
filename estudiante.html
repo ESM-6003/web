@@ -118,6 +118,56 @@
     <!-- Header End -->
 
 
+    <!-- Cartelera Start -->
+    <div class="container-fluid py-5 bg-light">
+        <div class="container py-5">
+            <div class="section-title position-relative mb-4">
+                <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Cartelera</h6>
+                <h1 class="display-4">Novedades Importantes</h1>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="cartelera-box p-4 bg-white rounded shadow-sm">
+                        <div id="carteleraItems" class="cartelera-items">
+                            <p class="text-secondary mb-0"><i class="fa fa-spinner fa-spin mr-2"></i>Cargando novedades...</p>
+                        </div>
+                        <div class="d-flex justify-content-end mt-4">
+                            <button id="carteleraEditBtn" class="btn btn-outline-primary cartelera-edit-trigger">
+                                <i class="fa fa-edit mr-2"></i>Editar Cartelera
+                            </button>
+                        </div>
+                        <div id="carteleraEditor" class="cartelera-editor mt-4 d-none">
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle mr-2"></i> Ingresa cada novedad en una línea separada
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="carteleraPassword"><strong>Clave de acceso</strong></label>
+                                    <input type="password" class="form-control" id="carteleraPassword" placeholder="Clave para editar">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="carteleraText"><strong>Novedades</strong></label>
+                                <textarea class="form-control" id="carteleraText" rows="6" placeholder="Escribe cada novedad en una línea"></textarea>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button id="carteleraCancelBtn" class="btn btn-secondary">
+                                    <i class="fa fa-times mr-2"></i>Cancelar
+                                </button>
+                                <button id="carteleraSaveBtn" class="btn btn-primary">
+                                    <i class="fa fa-save mr-2"></i>Guardar cambios
+                                </button>
+                            </div>
+                            <p id="carteleraEditorMessage" class="mt-3 text-muted small"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Cartelera End -->
+
+
     <!-- estudiante Start -->
     <div class="container-fluid py-5">
         <div class="container py-5">
@@ -127,7 +177,7 @@
                         <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Why Choose Us?</h6>
                         <h1 class="display-4">Why You Should Start Learning with Us?</h1>
                     </div>
-                    <p class="mb-4 pb-2">Aliquyam accusam clita nonumy ipsum sit sea clita ipsum clita, ipsum dolores amet voluptua duo dolores et sit ipsum rebum, sadipscing et erat eirmod diam kasd labore clita est. Diam sanctus gubergren sit rebum clita amet.</p>
+                    <p class="mb-4 pb-2">Aliquyam accusam clita nonumy ipsum sit sea clita ipsum clita, ipsum dolores amet voluptua duo dolores et sit ipsum rebum, sadipscing et erat eirmod diam voluptua.</p>
                     <div class="d-flex mb-3">
                         <div class="btn-icon bg-primary mr-4">
                             <i class="fa fa-2x fa-graduation-cap text-white"></i>
@@ -164,7 +214,7 @@
             </div>
         </div>
     </div>
-    <!-- estudiante Start -->
+    <!-- estudiante End -->
 
 
     <!-- Footer Start -->
@@ -234,6 +284,109 @@
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
+
+    <!-- Cartelera Script -->
+    <script>
+    (function ($) {
+        var CARTELERA_ACCESS_KEY = 'admin';
+        var CARTELERA_STORAGE_KEY = 'cartelera_estudiante_content';
+        var currentContent = '';
+
+        var $items = $('#carteleraItems');
+        var $editor = $('#carteleraEditor');
+        var $password = $('#carteleraPassword');
+        var $textarea = $('#carteleraText');
+        var $message = $('#carteleraEditorMessage');
+        var $editBtn = $('#carteleraEditBtn');
+        var $cancelBtn = $('#carteleraCancelBtn');
+        var $saveBtn = $('#carteleraSaveBtn');
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderCartelera(text) {
+            var lines = String(text || '').trim().split(/\r?\n/).filter(Boolean);
+            if (!lines.length) {
+                $items.html('<p class="text-secondary mb-0"><i class="fa fa-info-circle mr-2"></i>No hay novedades disponibles.</p>');
+                return;
+            }
+            var html = '<ul class="list-unstyled mb-0">';
+            lines.forEach(function (line) {
+                html += '<li class="cartelera-item mb-2"><i class="fa fa-circle text-primary mr-2"></i>' + escapeHtml(line) + '</li>';
+            });
+            html += '</ul>';
+            $items.html(html);
+        }
+
+        function setEditorVisible(visible) {
+            $editor.toggleClass('d-none', !visible);
+            if (!visible) {
+                $password.val('');
+                $message.text('');
+            }
+        }
+
+        function setEditorMessage(text, isError) {
+            $message.text(text).toggleClass('text-danger', !!isError).toggleClass('text-success', !isError);
+        }
+
+        function loadCarteleraFromLocal() {
+            var saved = localStorage.getItem(CARTELERA_STORAGE_KEY);
+            if (saved) {
+                currentContent = saved;
+                renderCartelera(saved);
+            } else {
+                renderCartelera('Bienvenido al portal de estudiantes\nRevisa las novedades regularmente\nContacta al administrador para información adicional');
+            }
+        }
+
+        function saveCarteleraToLocal(content) {
+            localStorage.setItem(CARTELERA_STORAGE_KEY, content);
+            currentContent = content;
+        }
+
+        $editBtn.on('click', function () {
+            setEditorVisible(true);
+            $textarea.val(currentContent);
+            $textarea.focus();
+        });
+
+        $cancelBtn.on('click', function () {
+            setEditorVisible(false);
+        });
+
+        $saveBtn.on('click', function () {
+            var password = String($password.val() || '').trim();
+            if (!password) {
+                setEditorMessage('Por favor, ingresa la clave de acceso.', true);
+                return;
+            }
+            if (password !== CARTELERA_ACCESS_KEY) {
+                setEditorMessage('Clave incorrecta. Intenta nuevamente.', true);
+                return;
+            }
+            var content = String($textarea.val() || '').trim();
+            if (!content) {
+                setEditorMessage('Por favor, agrega al menos una novedad.', true);
+                return;
+            }
+            saveCarteleraToLocal(content);
+            renderCartelera(content);
+            setEditorMessage('✓ Cambios guardados correctamente.', false);
+            setTimeout(function () {
+                setEditorVisible(false);
+            }, 2000);
+        });
+
+        loadCarteleraFromLocal();
+    })(jQuery);
+    </script>
 </body>
 
 </html>
