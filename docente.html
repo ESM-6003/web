@@ -712,6 +712,113 @@
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
+
+    <!-- Cartelera Script -->
+    <script>
+    (function ($) {
+        var CARTELERA_ACCESS_KEY = 'admin';
+        var CARTELERA_STORAGE_KEY = 'cartelera_docente_content';
+        var currentContent = '';
+
+        var $items = $('#carteleraItems');
+        var $editor = $('#carteleraEditor');
+        var $password = $('#carteleraPassword');
+        var $textarea = $('#carteleraText');
+        var $message = $('#carteleraEditorMessage');
+        var $editBtn = $('#carteleraEditBtn');
+        var $cancelBtn = $('#carteleraCancelBtn');
+        var $saveBtn = $('#carteleraSaveBtn');
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderCartelera(text) {
+            var lines = String(text || '').trim().split(/\r?\n/).filter(Boolean);
+            if (!lines.length) {
+                $items.html('<p class="text-secondary mb-0"><i class="fa fa-info-circle mr-2"></i>No hay novedades disponibles.</p>');
+                return;
+            }
+            var html = '<ul class="list-unstyled mb-0">';
+            lines.forEach(function (line) {
+                html += '<li class="cartelera-item mb-2"><i class="fa fa-circle text-primary mr-2"></i>' + escapeHtml(line) + '</li>';
+            });
+            html += '</ul>';
+            $items.html(html);
+        }
+
+        function setEditorVisible(visible) {
+            $editor.toggleClass('d-none', !visible);
+            if (!visible) {
+                $password.val('');
+                $message.text('');
+            }
+        }
+
+        function setEditorMessage(text, isError) {
+            $message.text(text).toggleClass('text-danger', !!isError).toggleClass('text-success', !isError);
+        }
+
+        function loadCarteleraFromLocal() {
+            var saved = localStorage.getItem(CARTELERA_STORAGE_KEY);
+            if (saved) {
+                currentContent = saved;
+                renderCartelera(saved);
+            } else {
+                renderCartelera('Bienvenido al portal docente\nRevisa las novedades regularmente\nContacta con administración para información adicional');
+            }
+        }
+
+        function saveCarteleraToLocal(content) {
+            localStorage.setItem(CARTELERA_STORAGE_KEY, content);
+            currentContent = content;
+        }
+
+        $editBtn.on('click', function () {
+            setEditorVisible(true);
+            $textarea.val(currentContent);
+            $textarea.focus();
+        });
+
+        $cancelBtn.on('click', function () {
+            setEditorVisible(false);
+        });
+
+        $saveBtn.on('click', function () {
+            var password = String($password.val() || '').trim();
+            if (!password) {
+                setEditorMessage('Por favor, ingresa la clave de acceso.', true);
+                return;
+            }
+            if (password !== CARTELERA_ACCESS_KEY) {
+                setEditorMessage('Clave incorrecta. Intenta nuevamente.', true);
+                return;
+            }
+            var content = String($textarea.val() || '').trim();
+            if (!content) {
+                setEditorMessage('Por favor, agrega al menos una novedad.', true);
+                return;
+            }
+            saveCarteleraToLocal(content);
+            renderCartelera(content);
+            setEditorMessage('✓ Cambios guardados correctamente.', false);
+            setTimeout(function () {
+                setEditorVisible(false);
+            }, 2000);
+        });
+
+        loadCarteleraFromLocal();
+    })(jQuery);
+    </script>
+</body>
+
+</html>
+
 </body>
 
 </html>
