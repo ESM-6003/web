@@ -58,8 +58,6 @@
     </div>
     <!-- Topbar End -->
 
-
-
     <!-- Navbar Start -->
     <div class="container-fluid p-0">
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0 px-lg-5">
@@ -128,8 +126,8 @@
                                 <i class="fa fa-2x fa-map-marker-alt text-white"></i>
                             </div>
                             <div class="mt-n1">
-                                <h4>Our Location</h4>
-                                <p class="m-0">123 Street, New York, USA</p>
+                                <h4>¿Donde Estamos?</h4>
+                                <p class="m-0">Av. Lucrecia Barquet esq. Benjamín Ávila, Barrio El Huaico, CP 4400, Salta Capital</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-center mb-5">
@@ -137,8 +135,8 @@
                                 <i class="fa fa-2x fa-phone-alt text-white"></i>
                             </div>
                             <div class="mt-n1">
-                                <h4>Call Us</h4>
-                                <p class="m-0">+012 345 6789</p>
+                                <h4>Telefono</h4>
+                                <p class="m-0">+54 9 387 4952232</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -146,36 +144,39 @@
                                 <i class="fa fa-2x fa-envelope text-white"></i>
                             </div>
                             <div class="mt-n1">
-                                <h4>Email Us</h4>
-                                <p class="m-0">info@example.com</p>
+                                <h4>Nuestro Email</h4>
+                                <p class="m-0">infoweb.esm@gmail.com</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-7">
                     <div class="section-title position-relative mb-4">
-                        <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Need Help?</h6>
-                        <h1 class="display-4">Send Us A Message</h1>
-                        <h4 class="mb-4">Receive messages instantly with our PHP and Ajax contact form - available in the <a href="https://htmlcodex.com/downloading/?item=1574">Pro Version</a> only.</h4>
+                        <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">¿Necesitas Ayuda?</h6>
+                        <h1 class="display-4">Envíanos un Mensaje</h1>
                     </div>
                     <div class="contact-form">
-                        <form>
+                        <form id="contactForm" action="https://formsubmit.co/infoweb.esm@gmail.com" method="POST">
+                            <input type="hidden" name="_template" value="table">
+                            <input type="hidden" name="_captcha" value="true">
+                            <input type="hidden" name="_next" value="https://escuelademusicasalta.com/contact.html?enviado=1">
+                            <input type="text" name="_honey" style="display:none">
                             <div class="row">
                                 <div class="col-6 form-group">
-                                    <input type="text" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Your Name">
+                                    <input type="text" name="name" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Nombre y Apellido" required>
                                 </div>
                                 <div class="col-6 form-group">
-                                    <input type="email" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Your Email">
+                                    <input type="email" name="_replyto" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Tu email" required>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <input type="text" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Subject">
+                                <input type="text" name="_subject" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Asunto" required>
                             </div>
                             <div class="form-group">
-                                <textarea class="form-control border-top-0 border-right-0 border-left-0 p-0" rows="5" placeholder="Message"></textarea>
+                                <textarea name="message" class="form-control border-top-0 border-right-0 border-left-0 p-0" rows="5" placeholder="Mensaje" required></textarea>
                             </div>
                             <div>
-                                <button class="btn btn-primary py-3 px-5" type="submit">Send Message</button>
+                                <button class="btn btn-primary py-3 px-5" type="submit">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -192,37 +193,38 @@
             <div class="row">
                 <div class="col-md-6 mb-5">
                     <a href="index.html" class="navbar-brand">
-                        <h1 class="mt-n2 d-flex align-items-center footer-brand-title">
+                        <h2 class="mt-n2 d-flex align-items-center footer-brand-title">
                             <img src="img/icono.png" alt="Logo Escuela Superior de Música">
                             <span class="footer-brand-text">ESCUELA SUPERIOR DE MUSICA DE LA PROVINCIA DE SALTA - JOSE LO GIUDICE</span>
-                        </h1>
+                        </h2>
                     </a>
                 </div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-md-4 mb-5">
-                    <h3 class="text-white mb-4">Contactos</h3>
+                    <h3 class="text-white mb-4">Contacto</h3>
                     <p><i class="fa fa-map-marker-alt mr-2"></i>Av. Lucrecia Barquet esq. Benjamín Ávila, Barrio El Huaico, CP 4400, Salta Capital</p>
                     <p><i class="fa fa-phone-alt mr-2"></i>+54 9 387 4952232</p>
-                    <p><i class="fa fa-envelope mr-2"></i>info@esm600.com</p>
+                    <p><i class="fa fa-envelope mr-2"></i>infoweb.esm@gmail.com</p>
                     <div class="d-flex justify-content-start mt-4">
-                        <a class="text-white mr-4" href="#"><i class="fab fa-2x fa-facebook-f"></i></a>
-                        <a class="text-white mr-4" href="#"><i class="fab fa-2x fa-youtube"></i></a>
-                        <a class="text-white" href="#"><i class="fab fa-2x fa-instagram"></i></a>
+                        <a class="text-white mr-4" href="https://www.facebook.com/profile.php?id=100092569306493"><i class="fab fa-2x fa-facebook-f"></i></a>
+                        <a class="text-white mr-4" href="https://www.instagram.com/esm.salta/?hl=es"><i class="fab fa-2x fa-youtube"></i></a>
+                        <a class="text-white" href="https://www.youtube.com/@escuelademusicajoselogiudi229"><i class="fab fa-2x fa-instagram"></i></a>
                     </div>
                 </div>
                 <div class="col-md-4 mb-5">
-                    <h3 class="text-white mb-4">Our Courses</h3>
+                    <h3 class="text-white mb-4">Oferta Académica</h3>
                     <div class="d-flex flex-column justify-content-start">
-                        <a class="text-white-50 mb-2" href="#"><i class="fa fa-angle-right mr-2"></i>Iniciación Musical y Coro de Niños</a>
-                        <a class="text-white-50 mb-2" href="#"><i class="fa fa-angle-right mr-2"></i>Talleres de Jóvenes y Adultos</a>
-                        <a class="text-white-50 mb-2" href="#"><i class="fa fa-angle-right mr-2"></i>Trayecto Artístico Profesional (TAP)</a>
-                        <a class="text-white-50 mb-2" href="#"><i class="fa fa-angle-right mr-2"></i>Profesorado de Música con Orientación en Instrumento</a>
-                        <a class="text-white-50 mb-2" href="#"><i class="fa fa-angle-right mr-2"></i>Profesorado en Música con Orientación en Educación Musical</a>
-                        <a class="text-white-50 mb-2" href="#"><i class="fa fa-angle-right mr-2"></i>Orquestas y Coro Mayor</a>
+                        <a class="text-white-50 mb-2" href="im.html"><i class="fa fa-angle-right mr-2"></i>Iniciación Musical y Coro de Niños</a>
+                        <a class="text-white-50 mb-2" href="talleres.html"><i class="fa fa-angle-right mr-2"></i>Talleres de Jóvenes y Adultos</a>
+                        <a class="text-white-50 mb-2" href="tap.html"><i class="fa fa-angle-right mr-2"></i>Trayecto Artístico Profesional (TAP)</a>
+                        <a class="text-white-50 mb-2" href="prof_inst.html"><i class="fa fa-angle-right mr-2"></i>Profesorado de Música con Orientación en Instrumento</a>
+                        <a class="text-white-50 mb-2" href="prof_ed.html"><i class="fa fa-angle-right mr-2"></i>Profesorado en Música con Orientación en Educación Musical</a>
+                        <a class="text-white-50 mb-2" href="coro_y_orq.html"><i class="fa fa-angle-right mr-2"></i>Orquestas y Coro Mayor</a>
                     </div>
                 </div>
+<!---
                 <div class="col-md-4 mb-5">
                     <h3 class="text-white mb-4">Links de interés</h3>
                     <div class="d-flex flex-column justify-content-start">
@@ -233,6 +235,7 @@
                         <a class="text-white-50" href="#"><i class="fa fa-angle-right mr-2"></i>Contact</a>
                     </div>
                 </div>
+-->
             </div>
         </div>
     </div>
