@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es-AR">
 
 <head>
     <meta charset="utf-8">
@@ -156,27 +156,29 @@
                         <h1 class="display-4">Envíanos un Mensaje</h1>
                     </div>
                     <div class="contact-form">
-                        <form id="contactForm" action="https://formsubmit.co/infoweb.esm@gmail.com" method="POST">
+                        <form id="contactForm" action="https://formsubmit.co/ajax/infoweb.esm@gmail.com" method="POST">
+                            <input type="hidden" name="_subject" value="Nuevo mensaje desde la web - Escuela Superior de Música">
                             <input type="hidden" name="_template" value="table">
-                            <input type="hidden" name="_captcha" value="true">
-                            <input type="hidden" name="_next" value="https://escuelademusicasalta.com/contact.html?enviado=1">
+                            <input type="hidden" name="_captcha" value="false">
+                            <input type="hidden" name="_replyto" id="contactReplyTo" value="">
                             <input type="text" name="_honey" style="display:none">
                             <div class="row">
                                 <div class="col-6 form-group">
-                                    <input type="text" name="name" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Nombre y Apellido" required>
+                                    <input type="text" name="Nombre y Apellido" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Nombre y Apellido" required>
                                 </div>
                                 <div class="col-6 form-group">
-                                    <input type="email" name="_replyto" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Tu email" required>
+                                    <input type="email" name="Email de contacto" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Tu email" required>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <input type="text" name="_subject" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Asunto" required>
+                                <input type="text" name="Asunto" class="form-control border-top-0 border-right-0 border-left-0 p-0" placeholder="Asunto" required>
                             </div>
                             <div class="form-group">
-                                <textarea name="message" class="form-control border-top-0 border-right-0 border-left-0 p-0" rows="5" placeholder="Mensaje" required></textarea>
+                                <textarea name="Mensaje" class="form-control border-top-0 border-right-0 border-left-0 p-0" rows="5" placeholder="Mensaje" required></textarea>
                             </div>
+                            <div id="contactFormStatus" class="mb-3" style="display:none;"></div>
                             <div>
-                                <button class="btn btn-primary py-3 px-5" type="submit">Enviar</button>
+                                <button class="btn btn-primary py-3 px-5" type="submit" id="contactSubmitBtn">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -256,6 +258,64 @@
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
+
+    <!-- Contact Form (envio sin salir de la pagina, sin captcha) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('contactForm');
+            if (!form) return;
+
+            var statusBox = document.getElementById('contactFormStatus');
+            var submitBtn = document.getElementById('contactSubmitBtn');
+            var replyToField = document.getElementById('contactReplyTo');
+            var emailField = form.querySelector('[name="Email de contacto"]');
+
+            function mostrarEstado(mensaje, tipo) {
+                statusBox.textContent = mensaje;
+                statusBox.className = 'mb-3 alert alert-' + tipo;
+                statusBox.style.display = 'block';
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                statusBox.style.display = 'none';
+
+                if (replyToField && emailField) {
+                    replyToField.value = emailField.value;
+                }
+
+                submitBtn.disabled = true;
+                var textoOriginal = submitBtn.innerHTML;
+                submitBtn.innerHTML = 'Enviando...';
+
+                var formData = new FormData(form);
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Error de red');
+                        }
+                        return response.json();
+                    })
+                    .then(function () {
+                        form.reset();
+                        mostrarEstado('¡Gracias! Tu mensaje fue enviado correctamente. Te responderemos a la brevedad.', 'success');
+                    })
+                    .catch(function () {
+                        mostrarEstado('Ocurrió un error al enviar el mensaje. Por favor intentá nuevamente o escribinos directamente a infoweb.esm@gmail.com.', 'danger');
+                    })
+                    .finally(function () {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = textoOriginal;
+                    });
+            });
+        });
+    </script>
 </body>
 
 </html>
