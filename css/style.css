@@ -10699,6 +10699,12 @@ html {
   overflow: hidden;
 }
 
+/* Continuous smooth ticker animation for team carousel */
+.team-carousel.team-carousel-continuous .owl-stage {
+  transition-timing-function: linear !important;
+  -webkit-transition-timing-function: linear !important;
+}
+
 .courses-item,
 .team-item {
   width: 100%;

@@ -37,7 +37,12 @@
                 return;
             }
 
-            if (isMobile) {
+            if ($carousel.hasClass('team-carousel')) {
+                // Keep team carousel rotating continuously on both mobile and desktop
+                if (!$carousel.data('owl.carousel').is('rotating')) {
+                    $carousel.trigger('play.owl.autoplay');
+                }
+            } else if (isMobile) {
                 $carousel.trigger('stop.owl.autoplay');
             } else {
                 $carousel.trigger('play.owl.autoplay', [3500]);
@@ -431,9 +436,14 @@
     var $teamCarousel = $(".team-carousel");
 
     if ($teamCarousel.length) {
+        $teamCarousel.addClass('team-carousel-continuous');
+
         $teamCarousel.owlCarousel({
             autoplay: true,
+            autoplayTimeout: 1500,
+            autoplaySpeed: 1000,
             smartSpeed: 1000,
+            autoplayHoverPause: true,
             margin: 30,
             dots: false,
             loop: true,
