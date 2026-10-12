@@ -175,7 +175,7 @@
                         </div>
                         <div id="carteleraEditor" class="cartelera-editor mt-4 d-none">
                             <div class="alert alert-info" role="alert">
-                                <i class="fa fa-info-circle mr-2"></i> Ingresa cada novedad en una línea separada
+                                <i class="fa fa-info-circle mr-2"></i> Ingresa cada novedad en una línea separada. Pega una URL (https://...) para que aparezca como enlace clicable.
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-md-6">
@@ -185,7 +185,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="carteleraText"><strong>Novedades</strong></label>
-                                <textarea class="form-control" id="carteleraText" rows="6" placeholder="Escribe cada novedad en una línea"></textarea>
+                                <textarea class="form-control" id="carteleraText" rows="6" placeholder="Escribe cada novedad en una línea. Pega una URL para crear un enlace clicable."></textarea>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <button id="carteleraCancelBtn" class="btn btn-secondary">
@@ -355,6 +355,30 @@
                 .replace(/'/g, '&#39;');
         }
 
+        function renderLineWithLinks(line) {
+            var urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+            var html = '';
+            var lastIndex = 0;
+            var match;
+
+            while ((match = urlPattern.exec(line)) !== null) {
+                var rawUrl = match[0];
+                var url = rawUrl.replace(/[.,!?;:)\]}]+$/, '');
+                if (!url) {
+                    continue;
+                }
+                var punctuation = rawUrl.slice(url.length);
+                var href = /^www\./i.test(url) ? 'https://' + url : url;
+
+                html += escapeHtml(line.slice(lastIndex, match.index));
+                html += '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + '</a>';
+                html += escapeHtml(punctuation);
+                lastIndex = match.index + rawUrl.length;
+            }
+
+            return html + escapeHtml(line.slice(lastIndex));
+        }
+
         function renderCartelera(text) {
             var lines = String(text || '').trim().split(/\r?\n/).filter(Boolean);
             if (!lines.length) {
@@ -363,7 +387,7 @@
             }
             var html = '<ul class="list-unstyled mb-0">';
             lines.forEach(function (line) {
-                html += '<li class="cartelera-item mb-2"><i class="fa fa-circle text-primary mr-2"></i>' + escapeHtml(line) + '</li>';
+                html += '<li class="cartelera-item mb-2"><i class="fa fa-circle text-primary mr-2"></i>' + renderLineWithLinks(line) + '</li>';
             });
             html += '</ul>';
             $items.html(html);
