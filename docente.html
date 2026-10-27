@@ -276,17 +276,59 @@ function cambiarVideo(videoID, elemento){
 <!-- Campus Virtual End -->
 
 
-            <div class="row justify-content-center">
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                    <div class="licenses-box h-100">
-                        <h3 class="licenses-subtitle">Mesas de Examen</h3>
-                        <ul class="mb-0">
-                            <li><a href="https://docs.google.com/spreadsheets/d/16HjFT-I1JTtEXUf5OBFr8V4soTtXAPhV6OJLWdiOo4o/edit?usp=sharing">Tap|Talleres - Diciembre</a></li>                            
-                            <li><a href="https://docs.google.com/spreadsheets/d/1fJTcSu38q5WkhukiG2TrlNSQaTrH53oW7VAf-tm6kMU/edit?usp=sharing">Profesorados - Diciembre</a></li>
-                            <li><a href="https://docs.google.com/spreadsheets/d/1wLoRQdpi4Uf6t10sEfOMp_v7nF3fIM6PhdBeQUWe00k/edit?usp=sharing">TAP|Talleres - Febrero</a></li>
-                            <li><a href="https://docs.google.com/spreadsheets/d/1qV0offT4AhSvYWbAjrZmTcA9T6u6SDMD7S2NfGrb6AI/edit?usp=sharing">Profesoras - Febrero</a></li>
-                        </ul>
+    <div class="container-fluid py-5 bg-light" id="mesasExamenSection">
+        <div class="container py-5">
+            <div class="section-title text-center position-relative mb-4">
+                <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Mesas de Examen</h6>
+                <h2 class="display-4">Cronogramas</h2>
+            </div>
+            <div class="exam-sheets-box">
+                <div id="examSheetsAccordion">
+                    <div class="exam-sheet">
+                        <button class="exam-sheet-toggle" type="button" data-toggle="collapse" data-target="#examTapDecember" aria-expanded="false" aria-controls="examTapDecember">
+                            <span>TAP y Talleres - Diciembre</span>
+                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        <div id="examTapDecember" class="collapse" data-parent="#examSheetsAccordion">
+                            <div class="exam-sheet-content">
+                                <iframe src="https://docs.google.com/spreadsheets/d/16HjFT-I1JTtEXUf5OBFr8V4soTtXAPhV6OJLWdiOo4o/preview" title="Mesas de examen de TAP y Talleres - Diciembre" loading="lazy"></iframe>
+                            </div>
+                        </div>
                     </div>
+                    <div class="exam-sheet">
+                        <button class="exam-sheet-toggle" type="button" data-toggle="collapse" data-target="#examProfesoradosDecember" aria-expanded="false" aria-controls="examProfesoradosDecember">
+                            <span>Profesorados - Diciembre</span>
+                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        <div id="examProfesoradosDecember" class="collapse" data-parent="#examSheetsAccordion">
+                            <div class="exam-sheet-content">
+                                <iframe src="https://docs.google.com/spreadsheets/d/1fJTcSu38q5WkhukiG2TrlNSQaTrH53oW7VAf-tm6kMU/preview" title="Mesas de examen de Profesorados - Diciembre" loading="lazy"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="exam-sheet">
+                        <button class="exam-sheet-toggle" type="button" data-toggle="collapse" data-target="#examTapFebruary" aria-expanded="false" aria-controls="examTapFebruary">
+                            <span>TAP y Talleres - Febrero</span>
+                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        <div id="examTapFebruary" class="collapse" data-parent="#examSheetsAccordion">
+                            <div class="exam-sheet-content">
+                                <iframe src="https://docs.google.com/spreadsheets/d/1wLoRQdpi4Uf6t10sEfOMp_v7nF3fIM6PhdBeQUWe00k/preview" title="Mesas de examen de TAP y Talleres - Febrero" loading="lazy"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="exam-sheet">
+                        <button class="exam-sheet-toggle" type="button" data-toggle="collapse" data-target="#examProfesoradosFebruary" aria-expanded="false" aria-controls="examProfesoradosFebruary">
+                            <span>Profesorados - Febrero</span>
+                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        <div id="examProfesoradosFebruary" class="collapse" data-parent="#examSheetsAccordion">
+                            <div class="exam-sheet-content">
+                                <iframe src="https://docs.google.com/spreadsheets/d/1qV0offT4AhSvYWbAjrZmTcA9T6u6SDMD7S2NfGrb6AI/preview" title="Mesas de examen de Profesorados - Febrero" loading="lazy"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
