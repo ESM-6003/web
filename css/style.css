@@ -10471,6 +10471,60 @@ h1, h2, h3, h4, h5, h6,
   margin-bottom: 0.6rem;
 }
 
+.exam-sheets-box {
+  border: 1px solid rgba(127, 0, 23, 0.18);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(8, 8, 8, 0.05);
+  padding: 12px 20px;
+}
+
+.exam-sheet + .exam-sheet {
+  border-top: 1px solid rgba(127, 0, 23, 0.18);
+}
+
+.exam-sheet-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  color: #52000e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 16px 4px;
+  text-align: left;
+}
+
+.exam-sheet-toggle:hover,
+.exam-sheet-toggle:focus {
+  color: #7f0017;
+  outline: 2px solid rgba(127, 0, 23, 0.25);
+  outline-offset: -2px;
+}
+
+.exam-sheet-toggle[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}
+
+.exam-sheet-toggle i {
+  transition: transform .2s ease;
+}
+
+.exam-sheet-content {
+  padding: 0 0 16px;
+}
+
+.exam-sheet-content iframe {
+  display: block;
+  width: 100%;
+  height: 85vh;
+  min-height: 450px;
+  border: 0;
+}
+
 @media (max-width: 767.98px) {
   .license-table {
     min-width: 760px;
@@ -10478,7 +10532,8 @@ h1, h2, h3, h4, h5, h6,
 
   .licenses-intro,
   .licenses-important,
-  .licenses-box {
+  .licenses-box,
+  .exam-sheets-box {
     padding: 16px;
   }
 }
