@@ -10295,7 +10295,11 @@ h1, h2, h3, h4, h5, h6,
 
 
 .curriculum-link:hover,
-.curriculum-link:focus {
+.curriculum-link:focus,
+.curriculum-link-1:hover,
+.curriculum-link-1:focus,
+.curriculum-link-2:hover,
+.curriculum-link-2:focus {
   color: #52000e;
   text-decoration: underline;
 }
@@ -10496,6 +10500,7 @@ h1, h2, h3, h4, h5, h6,
   font-weight: 700;
   padding: 16px 4px;
   text-align: left;
+  text-decoration: none;
 }
 
 .exam-sheet-toggle:hover,

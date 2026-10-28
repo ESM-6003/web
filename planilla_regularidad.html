@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planilla de Regularidad - Escuela Superior de Música</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+    :root { --accent: #7f0017; --text: #2f2e34; --soft: #6b6a75; --line: #d9d5cc; }
+    * { box-sizing: border-box; }
+    body { font-family: "Nunito Sans", "Futura PT", Futura, "Trebuchet MS", sans-serif; margin: 0; min-height: 100vh; color: var(--text);
+        background: radial-gradient(circle at 18% 0%, rgba(127,0,23,.12), transparent 34%), radial-gradient(circle at 84% 0%, rgba(8,8,8,.08), transparent 36%), linear-gradient(160deg, #f8f7f3, #efede7); }
+    .wrap { width: min(1100px, 94vw); margin: 24px auto; background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(252,250,246,.96));
+        border: 1px solid #e4ddd4; border-radius: 18px; padding: 18px; box-shadow: 0 14px 42px rgba(64,40,22,.12); }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .brand img { height: 64px; }
+    .brand .l1 { font-weight: 900; letter-spacing: .5px; text-transform: uppercase; font-size: 1.05rem; color: #080808; }
+    .brand .l2 { font-weight: 700; font-size: .85rem; color: var(--accent); text-transform: uppercase; }
+    h1 { margin: 0 0 14px; font-size: clamp(1.3rem, 2.2vw, 2rem); font-weight: 800; color: var(--accent); }
+    .card { background: rgba(255,255,255,.92); border: 1px solid #e3ddd4; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .filters label { display: flex; flex-direction: column; font-weight: 700; font-size: 13px; gap: 4px; }
+    select, input { padding: 9px 10px; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; background: #fff; color: var(--text); }
+    select:focus, input:focus { outline: 2px solid rgba(127,0,23,.35); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid var(--line); padding: 4px; }
+    th { background: linear-gradient(120deg, #7f0017, #5f0011); color: #fff; font-size: 13px; padding: 9px; }
+    td input, td select { width: 100%; border: 1px solid transparent; background: transparent; border-radius: 6px; }
+    td input:focus, td select:focus { background: #fff; }
+    td.n { text-align: center; width: 36px; color: var(--soft); }
+    .actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    button { padding: 10px 16px; border: 1px solid var(--accent); border-radius: 10px; cursor: pointer; font-size: 14px; font-family: inherit; background: linear-gradient(120deg, #7f0017, #5f0011); color: #fff; }
+    button.sec { background: #fff; color: var(--accent); }
+    button.del { background: #fff; color: #b52f3a; border-color: #b52f3a; padding: 3px 9px; }
+    #planilla[hidden] { display: none; }
+    .print-head { display: none; }
+    @page { size: A4; margin: 14mm; }
+    @media print {
+        body { background: #fff; }
+        .wrap { width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; background: #fff; }
+        .brand { border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        .card { display: none; }
+        .actions, .col-del { display: none; }
+        .print-head { display: block; margin: 10px 0; line-height: 1.7; }
+        td input, td select { border: 0; appearance: none; -webkit-appearance: none; padding: 2px; }
+        th { background: #eee !important; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        tr { break-inside: avoid; }
+    }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="brand">
+        <img src="img/icono.png" alt="Logo Escuela Superior de Música">
+        <div>
+            <div class="l1">Escuela Superior de Música</div>
+            <div class="l2">de la Provincia de Salta - José Lo Giudice</div>
+        </div>
+    </div>
+    <h1>Planilla de Regularidad de Alumnos</h1>
+
+    <div class="card filters">
+        <label>Carrera
+            <select id="carrera"><option value="">-- Seleccionar carrera --</option></select>
+        </label>
+        <label>Materia
+            <select id="materia" disabled><option value="">-- Seleccionar materia --</option></select>
+        </label>
+        <label>Docente
+            <input type="text" id="docente" placeholder="Apellido y Nombre del docente">
+        </label>
+        <label>Ciclo lectivo
+            <input type="number" id="ciclo" min="2000" max="2100">
+        </label>
+    </div>
+
+    <div id="planilla" hidden>
+        <div class="print-head">
+            <strong>Carrera:</strong> <span id="pCarrera"></span><br>
+            <strong>Materia:</strong> <span id="pMateria"></span><br>
+            <strong>Docente:</strong> <span id="pDocente"></span> &nbsp;&nbsp;
+            <strong>Ciclo lectivo:</strong> <span id="pCiclo"></span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th><th>Legajo</th><th>Apellido y Nombre</th><th>Calificación</th><th>Condición</th><th class="col-del"></th>
+                </tr>
+            </thead>
+            <tbody id="filas"></tbody>
+        </table>
+        <div class="actions">
+            <button id="agregar">+ Agregar alumno</button>
+            <button class="sec" id="imprimir">Descargar PDF</button>
+            <button class="sec" id="limpiar">Vaciar planilla</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Catálogo editable: agregar o modificar carreras y materias según el plan vigente.
+const CATALOGO = {
+    "Trayecto Artístico Profesional (TAP)": {
+        "1° Año": ["Gramática del Lenguaje Musical I", "Técnica Corporal I", "Práctica Coral I",
+            "Técnica Vocal y Lectura a Primera Vista I", "Técnica Instrumental y Lectura a Primera Vista I", "Fonética Italiana"],
+        "2° Año": ["Gramática del Lenguaje Musical II", "Técnica Corporal II", "Práctica Coral II", "Instrumento Complementario I",
+            "Técnica Vocal y Lectura a Primera Vista II", "Técnica Instrumental y Lectura a Primera Vista II", "Fonética Francesa", "Taller de Informática"],
+        "3° Año": ["Gramática del Lenguaje Musical III", "Armonía Aplicada y Técnica de Análisis I", "Instrumento Complementario II",
+            "Movimientos, Escuelas y Tendencias en la Música I", "Estética General", "Repertorio y Técnica Vocal I",
+            "Repertorio y Técnica Instrumental I", "Práctica y Ensamble I", "Fonética Alemana"],
+        "4° Año": ["Gramática del Lenguaje Musical IV", "Armonía Aplicada y Técnica de Análisis II",
+            "Movimientos, Escuelas y Tendencias en la Música II", "Técnicas de improvización", "Proyecto Final",
+            "Repertorio y Técnica Vocal II", "Repertorio y Técnica Instrumental II", "Práctica y Ensamble II",
+            "Instrumento Complementario III", "Fonética Inglesa"]
+    },
+    "Profesorado de Música con Orientación en Instrumento": {
+        "1° Año": ["Pedagogía", "Didáctica General", "Psicología Educacional", "Lectura y Escritura Académica",
+            "Elementos Técnicos y Análisis 1", "Instrumento o Canto 1", "Canto Colectivo", "Géneros y Formas Musicales 1",
+            "Folklore y Etnomusicología", "Sujeto de la Educación 1", "Práctica Docente I: Contexto, Comunidad y Escuela"],
+        "2° Año": ["Sociología de la Educación y la Cultura", "Historia Argentina y Latinoamericana",
+            "Tecnologías de la Información y la Comunicación", "Elementos Técnicos y Análisis 2", "Instrumento o Canto 2",
+            "Géneros y Formas Musicales 2", "Sujeto de la Educación 2", "Didáctica de la Música 1: Nivel Inicial, Primario y Especial",
+            "Historia de la Música 1 (Argentina y Latinoamericana)", "Práctica Docente II: Gestión Institucional, Currículum y Enseñanza"],
+        "3° Año": ["Historia y Política de la Educación Argentina", "Filosofía", "Instrumento o Canto 3",
+            "Composición, Instrumentación y Arreglos", "Elementos Técnicos y Análisis 3",
+            "Didáctica de la Música 2: Nivel Secundario y Educación Artística Especializada", "Ensamble 1", "Historia de la Música 2",
+            "Coro y Dirección Coral", "Práctica Docente III: Intervención Nivel Inicial y Primario y Sujeto de la Educación Especial"],
+        "4° Año": ["Formación Ética y Ciudadana", "Estética Contemporánea", "Instrumento o Canto 4", "Ensamble 2",
+            "Historia de la Música 3", "Didáctica de la Música 3: Nivel Superior", "Acústica Musical y Organología",
+            "Práctica Docente IV: Intervención en el Nivel Secundario"],
+        "5° Año": ["Semiótica", "Metodología de la Investigación", "Instrumento o Canto 5",
+            "Música de Cámara (Arte Escénico para los Alumnos de Canto)", "Seminario de Investigación en Música",
+            "Organización y Montaje de Producciones Didáctico-Musicales",
+            "Práctica Docente V: Intervención en el Nivel Superior en Instituciones Especializadas en Enseñanza Musical"]
+    },
+    "Profesorado en Música con Orientación en Educación Musical": {
+        "1° Año": ["Pedagogía", "Didáctica General", "Psicología Educacional", "Lectura y Escritura Académica",
+            "Elementos Técnicos y Análisis 1", "Instrumento Armónico 1", "Canto Colectivo", "Taller de Expresión y Comunicación",
+            "Géneros y Formas Musicales 1", "Folklore y Etnomusicología", "Sujeto de la Educación 1",
+            "Práctica Docente I: Contexto, Comunidad y Escuela"],
+        "2° Año": ["Sociología de la Educación y la Cultura", "Historia Argentina y Latinoamericana",
+            "Tecnologías de la Información y la Comunicación", "Elementos Técnicos y Análisis 2", "Instrumento Armónico 2",
+            "Instrumentos Regionales de Viento o Flauta Dulce", "Géneros y Formas Musicales 2", "Sujeto de la Educación 2",
+            "Didáctica de la Música 1: Nivel Inicial, Primario y Especial", "Historia de la Música 1 (Argentina y Latinoamericana)",
+            "Práctica Docente II: Gestión Institucional, Currículum y Enseñanza"],
+        "3° Año": ["Historia y Política de la Educación Argentina", "Filosofía", "Composición, Instrumentación y Arreglos",
+            "Instrumento Armónico 3", "Práctica de Conjunto vocal e Instrumental", "Percusión y Recursos Didácticos",
+            "Didáctica de la Música 2: Nivel Secundario y Educación Artística Especializada", "Coro y Dirección Coral",
+            "Práctica Docente III: Intervención Nivel Inicial y Primario y Sujeto de la Educación Especial"],
+        "4° Año": ["Formación Ética y Ciudadana", "Estética Contemporánea", "Instrumento Armónico 4",
+            "Práctica de conjunto vocal e instrumental 2", "Historia de la Música 3", "Acústica Musical y Organología",
+            "Didáctica de la Música 3: Nivel Superior", "Práctica Docente IV: Intervención en el Nivel Secundario"],
+        "5° Año": ["Semiótica", "Metodología de la Investigación", "Instrumento o Canto 5",
+            "Música de Cámara (Arte Escénico para los Alumnos de Canto)", "Seminario de Investigación en Música",
+            "Organización y Montaje de Producciones Didáctico-Musicales",
+            "Práctica Docente V: Intervención en el Nivel Superior en Instituciones Especializadas en Enseñanza Musical"]
+    },
+    "Iniciación Musical y Coro de Niños": {
+        "1° Año": ["Práctica Instrumental 1", "Iniciación Musical 1"],
+        "2° Año": ["Práctica Instrumental 2", "Iniciación Musical 2"],
+        "3° Año": ["Práctica Instrumental 3", "Iniciación Musical 3"]
+    },
+    "Talleres de Jóvenes y Adultos": {
+        "1° Año": ["Práctica Instrumental 1", "Iniciación Musical 1"],
+        "2° Año": ["Práctica Instrumental 2", "Iniciación Musical 2"],
+        "3° Año": ["Práctica Instrumental 3", "Iniciación Musical 3"]
+    }
+};
+// URL de la aplicación web de Apps Script (ver apps_script_planilla.gs). Vacío = no envía.
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwGBIootyUx6mAW23qMKAURURRvqIblawJ4HI9PbersroVZIb5hgFRDB_H2Yls8JeHY_A/exec";
+const CONDICIONES = ["Regular", "Libre", "Promoción"];
+
+const $ = id => document.getElementById(id);
+const selC = $("carrera"), selM = $("materia"), ciclo = $("ciclo");
+ciclo.value = new Date().getFullYear();
+
+Object.keys(CATALOGO).forEach(c => selC.add(new Option(c, c)));
+
+const docente = $("docente");
+const clave = () => `planilla|${selC.value}|${selM.value}|${ciclo.value}`;
+const claveDoc = () => "docente|" + clave();
+docente.addEventListener("input", () => {
+    $("pDocente").textContent = docente.value;
+    if (selC.value && selM.value) localStorage.setItem(claveDoc(), docente.value);
+});
+
+selC.addEventListener("change", () => {
+    selM.replaceChildren(new Option("-- Seleccionar materia --", ""));
+    Object.entries(CATALOGO[selC.value] || {}).forEach(([anio, materias]) => {
+        const g = document.createElement("optgroup");
+        g.label = anio;
+        materias.forEach(m => g.appendChild(new Option(m, m)));
+        selM.appendChild(g);
+    });
+    selM.disabled = !selC.value;
+    mostrar();
+});
+selM.addEventListener("change", mostrar);
+ciclo.addEventListener("change", mostrar);
+
+function mostrar() {
+    const ok = selC.value && selM.value;
+    $("planilla").hidden = !ok;
+    if (!ok) return;
+    $("pCarrera").textContent = selC.value;
+    $("pMateria").textContent = selM.value;
+    $("pCiclo").textContent = ciclo.value;
+    docente.value = localStorage.getItem(claveDoc()) || "";
+    $("pDocente").textContent = docente.value;
+    $("filas").innerHTML = "";
+    const guardado = JSON.parse(localStorage.getItem(clave()) || "[]");
+    (guardado.length ? guardado : [{}, {}, {}, {}, {}]).forEach(agregarFila);
+}
+
+function agregarFila(d = {}) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="n"></td>
+        <td><input class="legajo" inputmode="numeric"></td>
+        <td><input class="nombre"></td>
+        <td><input class="nota" type="number" min="0" max="10" step="1" inputmode="numeric"></td>
+        <td><select class="cond"><option value="">--</option>${CONDICIONES.map(c => `<option>${c}</option>`).join("")}</select></td>
+        <td class="col-del"><button class="del" title="Quitar">×</button></td>`;
+    tr.querySelector(".legajo").value = d.legajo || "";
+    tr.querySelector(".nombre").value = d.nombre || "";
+    tr.querySelector(".nota").value = d.nota ?? "";
+    tr.querySelector(".cond").value = d.cond || "";
+    tr.querySelector(".del").onclick = () => { tr.remove(); renumerar(); guardar(); };
+    $("filas").appendChild(tr);
+    renumerar();
+}
+
+function renumerar() {
+    [...$("filas").rows].forEach((r, i) => r.cells[0].textContent = i + 1);
+}
+
+function leer() {
+    return [...$("filas").rows].map(r => ({
+        legajo: r.querySelector(".legajo").value.trim(),
+        nombre: r.querySelector(".nombre").value.trim(),
+        nota: r.querySelector(".nota").value,
+        cond: r.querySelector(".cond").value
+    }));
+}
+
+function guardar() {
+    if (selC.value && selM.value) localStorage.setItem(clave(), JSON.stringify(leer()));
+}
+
+// Solo notas enteras de 0 a 10
+$("filas").addEventListener("input", e => {
+    if (!e.target.classList.contains("nota")) return;
+    const n = e.target.value;
+    if (n === "") return;
+    e.target.value = Math.min(10, Math.max(0, Math.trunc(Number(n)) || 0));
+});
+$("filas").addEventListener("input", guardar);
+$("filas").addEventListener("change", guardar);
+$("agregar").onclick = () => { agregarFila(); $("filas").lastElementChild.querySelector(".legajo").focus(); };
+$("imprimir").onclick = () => window.print();
+$("limpiar").onclick = () => {
+    if (confirm("¿Vaciar toda la planilla?")) { localStorage.removeItem(clave()); localStorage.removeItem(claveDoc()); mostrar(); }
+};
+
+// Al imprimir (botón o Ctrl+P) se envía la planilla a Google Sheets.
+async function enviarASheets() {
+    if (!SHEETS_URL || $("planilla").hidden) return;
+    const filas = leer().filter(f => f.legajo || f.nombre);
+    if (!filas.length) return;
+    try {
+        // text/plain evita el preflight CORS que Apps Script no soporta
+        await fetch(SHEETS_URL, {
+            method: "POST", mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ carrera: selC.value, materia: selM.value, docente: docente.value, ciclo: ciclo.value, filas })
+        });
+    } catch (e) {
+        alert("No se pudo enviar la planilla a Google Sheets. Revisá la conexión.");
+    }
+}
+window.addEventListener("beforeprint", enviarASheets);
+</script>
+</body>
+</html>
