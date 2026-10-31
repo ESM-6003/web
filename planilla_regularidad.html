@@ -34,12 +34,14 @@
     button.del { background: #fff; color: #b52f3a; border-color: #b52f3a; padding: 3px 9px; }
     #planilla[hidden] { display: none; }
     .print-head { display: none; }
+    .aviso { background: #f4ecee; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; color: var(--accent); }
+    .aviso[hidden], label[hidden] { display: none; }
     @page { size: A4; margin: 14mm; }
     @media print {
         body { background: #fff; }
         .wrap { width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; background: #fff; }
         .brand { border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
-        .card { display: none; }
+        .card, .aviso { display: none; }
         .actions, .col-del { display: none; }
         .print-head { display: block; margin: 10px 0; line-height: 1.7; }
         td input, td select { border: 0; appearance: none; -webkit-appearance: none; padding: 2px; }
@@ -65,9 +67,15 @@
         </label>
         <label>Materia
             <select id="materia" disabled><option value="">-- Seleccionar materia --</option></select>
+            <input type="text" id="otraMateria" placeholder="Escribir nombre de la materia" hidden>
         </label>
         <label>Docente
+            <select id="profesor" hidden></select>
             <input type="text" id="docente" placeholder="Apellido y Nombre del docente">
+        </label>
+        <label id="lblCom" hidden>Comisión
+            <select id="comision"></select>
+            <input type="text" id="otraComision" placeholder="Escribir comisión" hidden>
         </label>
         <label>Ciclo lectivo
             <input type="number" id="ciclo" min="2000" max="2100">
@@ -77,10 +85,11 @@
     <div id="planilla" hidden>
         <div class="print-head">
             <strong>Carrera:</strong> <span id="pCarrera"></span><br>
-            <strong>Materia:</strong> <span id="pMateria"></span><br>
+            <strong>Materia:</strong> <span id="pMateria"></span><span id="pCom"></span><br>
             <strong>Docente:</strong> <span id="pDocente"></span> &nbsp;&nbsp;
             <strong>Ciclo lectivo:</strong> <span id="pCiclo"></span>
         </div>
+        <div class="aviso" id="aviso" hidden>Esta materia tiene varios profesores o comisiones: elegí uno arriba para cargar sus inscriptos, o usá "Recargar inscriptos" para traerlos a todos.</div>
         <table>
             <thead>
                 <tr>
@@ -91,81 +100,15 @@
         </table>
         <div class="actions">
             <button id="agregar">+ Agregar alumno</button>
+            <button class="sec" id="cargarInscriptos" hidden>Recargar inscriptos</button>
             <button class="sec" id="imprimir">Descargar PDF</button>
             <button class="sec" id="limpiar">Vaciar planilla</button>
         </div>
     </div>
 </div>
 
+<script src="js/catalogo_materias.js"></script>
 <script>
-// Catálogo editable: agregar o modificar carreras y materias según el plan vigente.
-const CATALOGO = {
-    "Trayecto Artístico Profesional (TAP)": {
-        "1° Año": ["Gramática del Lenguaje Musical I", "Técnica Corporal I", "Práctica Coral I",
-            "Técnica Vocal y Lectura a Primera Vista I", "Técnica Instrumental y Lectura a Primera Vista I", "Fonética Italiana"],
-        "2° Año": ["Gramática del Lenguaje Musical II", "Técnica Corporal II", "Práctica Coral II", "Instrumento Complementario I",
-            "Técnica Vocal y Lectura a Primera Vista II", "Técnica Instrumental y Lectura a Primera Vista II", "Fonética Francesa", "Taller de Informática"],
-        "3° Año": ["Gramática del Lenguaje Musical III", "Armonía Aplicada y Técnica de Análisis I", "Instrumento Complementario II",
-            "Movimientos, Escuelas y Tendencias en la Música I", "Estética General", "Repertorio y Técnica Vocal I",
-            "Repertorio y Técnica Instrumental I", "Práctica y Ensamble I", "Fonética Alemana"],
-        "4° Año": ["Gramática del Lenguaje Musical IV", "Armonía Aplicada y Técnica de Análisis II",
-            "Movimientos, Escuelas y Tendencias en la Música II", "Técnicas de improvización", "Proyecto Final",
-            "Repertorio y Técnica Vocal II", "Repertorio y Técnica Instrumental II", "Práctica y Ensamble II",
-            "Instrumento Complementario III", "Fonética Inglesa"]
-    },
-    "Profesorado de Música con Orientación en Instrumento": {
-        "1° Año": ["Pedagogía", "Didáctica General", "Psicología Educacional", "Lectura y Escritura Académica",
-            "Elementos Técnicos y Análisis 1", "Instrumento o Canto 1", "Canto Colectivo", "Géneros y Formas Musicales 1",
-            "Folklore y Etnomusicología", "Sujeto de la Educación 1", "Práctica Docente I: Contexto, Comunidad y Escuela"],
-        "2° Año": ["Sociología de la Educación y la Cultura", "Historia Argentina y Latinoamericana",
-            "Tecnologías de la Información y la Comunicación", "Elementos Técnicos y Análisis 2", "Instrumento o Canto 2",
-            "Géneros y Formas Musicales 2", "Sujeto de la Educación 2", "Didáctica de la Música 1: Nivel Inicial, Primario y Especial",
-            "Historia de la Música 1 (Argentina y Latinoamericana)", "Práctica Docente II: Gestión Institucional, Currículum y Enseñanza"],
-        "3° Año": ["Historia y Política de la Educación Argentina", "Filosofía", "Instrumento o Canto 3",
-            "Composición, Instrumentación y Arreglos", "Elementos Técnicos y Análisis 3",
-            "Didáctica de la Música 2: Nivel Secundario y Educación Artística Especializada", "Ensamble 1", "Historia de la Música 2",
-            "Coro y Dirección Coral", "Práctica Docente III: Intervención Nivel Inicial y Primario y Sujeto de la Educación Especial"],
-        "4° Año": ["Formación Ética y Ciudadana", "Estética Contemporánea", "Instrumento o Canto 4", "Ensamble 2",
-            "Historia de la Música 3", "Didáctica de la Música 3: Nivel Superior", "Acústica Musical y Organología",
-            "Práctica Docente IV: Intervención en el Nivel Secundario"],
-        "5° Año": ["Semiótica", "Metodología de la Investigación", "Instrumento o Canto 5",
-            "Música de Cámara (Arte Escénico para los Alumnos de Canto)", "Seminario de Investigación en Música",
-            "Organización y Montaje de Producciones Didáctico-Musicales",
-            "Práctica Docente V: Intervención en el Nivel Superior en Instituciones Especializadas en Enseñanza Musical"]
-    },
-    "Profesorado en Música con Orientación en Educación Musical": {
-        "1° Año": ["Pedagogía", "Didáctica General", "Psicología Educacional", "Lectura y Escritura Académica",
-            "Elementos Técnicos y Análisis 1", "Instrumento Armónico 1", "Canto Colectivo", "Taller de Expresión y Comunicación",
-            "Géneros y Formas Musicales 1", "Folklore y Etnomusicología", "Sujeto de la Educación 1",
-            "Práctica Docente I: Contexto, Comunidad y Escuela"],
-        "2° Año": ["Sociología de la Educación y la Cultura", "Historia Argentina y Latinoamericana",
-            "Tecnologías de la Información y la Comunicación", "Elementos Técnicos y Análisis 2", "Instrumento Armónico 2",
-            "Instrumentos Regionales de Viento o Flauta Dulce", "Géneros y Formas Musicales 2", "Sujeto de la Educación 2",
-            "Didáctica de la Música 1: Nivel Inicial, Primario y Especial", "Historia de la Música 1 (Argentina y Latinoamericana)",
-            "Práctica Docente II: Gestión Institucional, Currículum y Enseñanza"],
-        "3° Año": ["Historia y Política de la Educación Argentina", "Filosofía", "Composición, Instrumentación y Arreglos",
-            "Instrumento Armónico 3", "Práctica de Conjunto vocal e Instrumental", "Percusión y Recursos Didácticos",
-            "Didáctica de la Música 2: Nivel Secundario y Educación Artística Especializada", "Coro y Dirección Coral",
-            "Práctica Docente III: Intervención Nivel Inicial y Primario y Sujeto de la Educación Especial"],
-        "4° Año": ["Formación Ética y Ciudadana", "Estética Contemporánea", "Instrumento Armónico 4",
-            "Práctica de conjunto vocal e instrumental 2", "Historia de la Música 3", "Acústica Musical y Organología",
-            "Didáctica de la Música 3: Nivel Superior", "Práctica Docente IV: Intervención en el Nivel Secundario"],
-        "5° Año": ["Semiótica", "Metodología de la Investigación", "Instrumento o Canto 5",
-            "Música de Cámara (Arte Escénico para los Alumnos de Canto)", "Seminario de Investigación en Música",
-            "Organización y Montaje de Producciones Didáctico-Musicales",
-            "Práctica Docente V: Intervención en el Nivel Superior en Instituciones Especializadas en Enseñanza Musical"]
-    },
-    "Iniciación Musical y Coro de Niños": {
-        "1° Año": ["Práctica Instrumental 1", "Iniciación Musical 1"],
-        "2° Año": ["Práctica Instrumental 2", "Iniciación Musical 2"],
-        "3° Año": ["Práctica Instrumental 3", "Iniciación Musical 3"]
-    },
-    "Talleres de Jóvenes y Adultos": {
-        "1° Año": ["Práctica Instrumental 1", "Iniciación Musical 1"],
-        "2° Año": ["Práctica Instrumental 2", "Iniciación Musical 2"],
-        "3° Año": ["Práctica Instrumental 3", "Iniciación Musical 3"]
-    }
-};
 // URL de la aplicación web de Apps Script (ver apps_script_planilla.gs). Vacío = no envía.
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwGBIootyUx6mAW23qMKAURURRvqIblawJ4HI9PbersroVZIb5hgFRDB_H2Yls8JeHY_A/exec";
 const CONDICIONES = ["Regular", "Libre", "Promoción"];
@@ -176,40 +119,246 @@ ciclo.value = new Date().getFullYear();
 
 Object.keys(CATALOGO).forEach(c => selC.add(new Option(c, c)));
 
-const docente = $("docente");
-const clave = () => `planilla|${selC.value}|${selM.value}|${ciclo.value}`;
+const docente = $("docente"), otraMateria = $("otraMateria");
+const OTRA = "__otra__";
+
+// Planilla de inscripciones de cada carrera (debe estar compartida "cualquiera con el enlace puede ver").
+// Carreras sin planilla no cargan inscriptos automáticamente.
+const INSCRIPCIONES = {
+    "Trayecto Artístico Profesional (TAP)": {
+        sheetId: "1YoyK2aw8x-RJAANB4enPna8HWspLML8aAYr4D_epI2s", hoja: "Inscripciones",
+        // Catálogo de materias, profesores/as y comisiones del sistema de inscripciones. Se lee en vivo en cada carga.
+        catalogoUrl: "https://raw.githubusercontent.com/ESM-6003/inscripciones_tap/main/materias_catalogo.js"
+    },
+    // En IM y Talleres la lista de materias también se toma en vivo del catálogo (agrupada por año)
+    "Iniciación Musical y Coro de Niños": {
+        sheetId: "1QRTPIEaMHVOR4SqIbf6jMFqnEVmxQJFmlpDAUTD0GRA", hoja: "Inscripciones", materiasDelCatalogo: true,
+        catalogoUrl: "https://raw.githubusercontent.com/ESM-6003/inscripciones_im/main/materias_catalogo.js"
+    },
+    "Talleres de Jóvenes y Adultos": {
+        sheetId: "1Mrfac8D86kZqDKJZJMR1qKe7j6E4bqTQKNPMTW_5TvY", hoja: "Inscripciones", materiasDelCatalogo: true,
+        catalogoUrl: "https://raw.githubusercontent.com/ESM-6003/inscripciones_talleres/main/materias_catalogo.js"
+    }
+};
+
+// Los nombres de materia difieren entre inscripciones y planilla (romanos, "Taller de", typos): se comparan normalizados.
+const normMateria = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/repertrio/g, "repertorio").replace(/improvizacion/g, "improvisacion")
+    .replace(/taller de /g, "").replace(/\binst\./g, "instrumento").replace(/\ben la musica\b/g, "")
+    .replace(/tecnicas/g, "tecnica").replace(/acordeon a piano/g, "acordeon")
+    .replace(/saxofon/g, "saxo").replace(/[:,.]/g, " ")
+    .replace(/\b(iv|iii|ii|i)\b/g, m => ({ i: 1, ii: 2, iii: 3, iv: 4 })[m])
+    .replace(/\s+/g, " ").trim();
+
+// Lee la hoja con la API gviz (JSONP, no requiere CORS).
+// Columnas: C nombre, D apellido, I legajo, Y materia, Z profesor, AA comision, AC en_lista_espera
+function pedirInscriptos(cfg) {
+    return new Promise((resolve, reject) => {
+        const cb = "__insc" + Date.now();
+        const s = document.createElement("script");
+        const fin = () => { delete window[cb]; s.remove(); };
+        window[cb] = d => {
+            fin();
+            if (!d || d.status !== "ok") return reject(new Error("La planilla no respondió (¿está compartida para ver?)"));
+            const v = c => (c && c.v != null ? String(c.f ?? c.v).trim() : "");
+            resolve(d.table.rows.map(r => ({
+                nombre: v(r.c[0]), apellido: v(r.c[1]), legajo: v(r.c[2]), materia: v(r.c[3]),
+                espera: /^(si|sí|true|1)$/i.test(v(r.c[4])), profesor: v(r.c[5]), comision: v(r.c[6])
+            })));
+        };
+        s.onerror = () => { fin(); reject(new Error("No se pudo conectar con la planilla")); };
+        s.src = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}/gviz/tq?sheet=${encodeURIComponent(cfg.hoja)}`
+            + `&tq=${encodeURIComponent("select C,D,I,Y,AC,Z,AA")}&tqx=${encodeURIComponent("out:json;responseHandler:" + cb)}`;
+        document.head.appendChild(s);
+    });
+}
+
+// Una lectura por carrera; se vuelve a pedir con "Recargar inscriptos"
+const cacheInsc = {};
+const datosCarrera = (c, forzar = false) => {
+    if (forzar) delete cacheInsc[c];
+    return cacheInsc[c] ||= pedirInscriptos(INSCRIPCIONES[c]).catch(e => { delete cacheInsc[c]; throw e; });
+};
+const inscDeMateria = todos => { const b = normMateria(materia()); return todos.filter(s => normMateria(s.materia) === b && !s.espera); };
+const distintos = (arr, f) => [...new Set(arr.map(f).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+// Comparación de nombres de docentes y comisiones sin tildes, mayúsculas ni espacios de más
+const plano = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
+// El archivo del repositorio es "window.MATERIAS_CATALOGO = {...};": se interpreta como JSON, sin ejecutar código remoto.
+// Si GitHub no responde se usa la última copia guardada en este navegador.
+async function pedirCatalogo(cfg) {
+    const claveLocal = "catalogo|" + cfg.catalogoUrl;
+    try {
+        const r = await fetch(cfg.catalogoUrl, { cache: "no-cache" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const texto = (await r.text()).replace(/^\s*window\.MATERIAS_CATALOGO\s*=\s*/, "").replace(/;\s*$/, "");
+        const cat = JSON.parse(texto);
+        localStorage.setItem(claveLocal, texto);
+        return cat;
+    } catch (e) {
+        const copia = localStorage.getItem(claveLocal);
+        if (copia) return JSON.parse(copia);
+        throw e;
+    }
+}
+
+// Índice por nombre de materia normalizado: profesores/as y comisión -> profesor/a
+function indexarCatalogo(cat) {
+    const idx = new Map();
+    for (const [nombre, m] of Object.entries(cat)) {
+        const k = normMateria(nombre);
+        const e = idx.get(k) || { profs: new Set(), coms: new Map() };
+        Object.keys(m.professors || {}).forEach(p => e.profs.add(p));
+        Object.entries(m.commissions || {}).forEach(([c, x]) => e.coms.set(c, (x && x.professor) || ""));
+        idx.set(k, e);
+    }
+    return idx;
+}
+
+const cacheCat = {};
+const catalogoCrudo = (c, forzar = false) => {
+    if (!INSCRIPCIONES[c]?.catalogoUrl) return Promise.resolve(null);
+    if (forzar) delete cacheCat[c];
+    return cacheCat[c] ||= pedirCatalogo(INSCRIPCIONES[c]).catch(e => { delete cacheCat[c]; throw e; });
+};
+const datosCatalogo = (c, forzar = false) => catalogoCrudo(c, forzar).then(cat => cat && indexarCatalogo(cat));
+
+// Materias del catálogo agrupadas por año: { "1° Año": [materias] }
+function materiasDeCatalogo(cat) {
+    const g = {};
+    for (const [nombre, m] of Object.entries(cat)) (g[`${(m.years || [])[0] || "?"}° Año`] ||= []).push(nombre);
+    return Object.fromEntries(Object.entries(g).sort(([a], [b]) => a.localeCompare(b, "es", { numeric: true })));
+}
+
+const selP = $("profesor"), selK = $("comision"), otraCom = $("otraComision");
+const OTRX = "__otrx__";
+let opciones = { profs: [], coms: [] }; // coms: [{ c: comisión, prof: profesor/a }]
+let tokenFiltros = 0;
+
+// Opciones de la materia elegida: del catálogo; si la materia no figura, de lo que hay en las inscripciones
+function calcularOpciones(cat, insc) {
+    const e = cat && cat.get(normMateria(materia()));
+    if (e) return { profs: [...e.profs], coms: [...e.coms].map(([c, prof]) => ({ c, prof })) };
+    const coms = new Map();
+    insc.forEach(s => { if (s.comision && !coms.has(s.comision)) coms.set(s.comision, s.profesor); });
+    return { profs: distintos(insc, s => s.profesor), coms: [...coms].map(([c, prof]) => ({ c, prof })) };
+}
+
+// Valores efectivos: "Otrx" no filtra inscriptos; la comisión escrita se usa solo para rotular la planilla
+const prof = () => selP.value === OTRX ? "" : selP.value;
+const comFiltro = () => selK.value === OTRX ? "" : selK.value;
+const comision = () => selK.value === OTRX ? otraCom.value.trim() : selK.value;
+
+function llenarSelect(sel, vacio, valores) {
+    const actual = sel.value;
+    sel.replaceChildren(new Option(vacio, ""), ...valores.map(v => new Option(v, v)), new Option("Otrx (escribir)...", OTRX));
+    sel.value = valores.includes(actual) || actual === OTRX ? actual : "";
+}
+
+// El selector de docente solo aparece si hay profesores/as inscriptos; si no, se escribe directamente
+function actualizarCamposLibres() {
+    docente.hidden = !selP.hidden && selP.value !== OTRX;
+    otraCom.hidden = selK.value !== OTRX;
+}
+
+function llenarFiltros() {
+    const profs = [...opciones.profs].sort((a, b) => a.localeCompare(b, "es"));
+    llenarSelect(selP, "-- Seleccionar docente --", profs);
+    selP.hidden = !profs.length;
+    const coms = opciones.coms.filter(x => !prof() || plano(x.prof) === plano(prof())).map(x => x.c)
+        .sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+    llenarSelect(selK, coms.length ? "Todas" : "Sin comisión", coms);
+    actualizarCamposLibres();
+}
+
+async function prepararFiltros() {
+    const token = ++tokenFiltros, c = selC.value;
+    selP.value = ""; selK.value = ""; otraCom.value = ""; opciones = { profs: [], coms: [] };
+    llenarFiltros();
+    if (!INSCRIPCIONES[c] || !materia()) return;
+    // Cada fuente puede fallar sin impedir la otra
+    const [cat, todos] = await Promise.all([datosCatalogo(c).catch(() => null), datosCarrera(c).catch(() => [])]);
+    if (token !== tokenFiltros) return; // cambió la selección mientras cargaba
+    opciones = calcularOpciones(cat, inscDeMateria(todos));
+    llenarFiltros();
+}
+
+// Materia efectiva: la elegida o, si se eligió "Otra", la escrita a mano
+const materia = () => selM.value === OTRA ? otraMateria.value.trim() : selM.value;
+const clave = () => `planilla|${selC.value}|${materia()}|${ciclo.value}` + (prof() ? `|p:${prof()}` : "") + (comision() ? `|c:${comision()}` : "");
 const claveDoc = () => "docente|" + clave();
 docente.addEventListener("input", () => {
     $("pDocente").textContent = docente.value;
-    if (selC.value && selM.value) localStorage.setItem(claveDoc(), docente.value);
+    if (selC.value && materia()) localStorage.setItem(claveDoc(), docente.value);
 });
 
-selC.addEventListener("change", () => {
+function llenarMaterias(grupos) {
+    const actual = selM.value;
     selM.replaceChildren(new Option("-- Seleccionar materia --", ""));
-    Object.entries(CATALOGO[selC.value] || {}).forEach(([anio, materias]) => {
+    Object.entries(grupos || {}).forEach(([anio, materias]) => {
         const g = document.createElement("optgroup");
         g.label = anio;
         materias.forEach(m => g.appendChild(new Option(m, m)));
         selM.appendChild(g);
     });
+    if (selC.value) selM.add(new Option("Otra (escribir)...", OTRA));
+    if ([...selM.options].some(o => o.value === actual)) selM.value = actual;
+}
+
+selC.addEventListener("change", () => {
+    selM.value = "";
+    llenarMaterias(CATALOGO[selC.value]);
+    const c = selC.value;
+    // Reemplaza la lista local por la del repositorio sin pisar una materia ya elegida
+    if (INSCRIPCIONES[c]?.materiasDelCatalogo) catalogoCrudo(c).then(cat => {
+        if (cat && selC.value === c) llenarMaterias(materiasDeCatalogo(cat));
+    }).catch(() => {});
     selM.disabled = !selC.value;
+    otraMateria.value = "";
+    otraMateria.hidden = true;
+    mostrar(true);
+});
+selM.addEventListener("change", () => {
+    otraMateria.hidden = selM.value !== OTRA;
+    if (selM.value === OTRA) otraMateria.focus();
+    mostrar(true);
+});
+otraMateria.addEventListener("change", () => mostrar(true));
+selP.addEventListener("change", () => { selK.value = ""; otraCom.value = ""; llenarFiltros(); if (selP.value === OTRX) docente.focus(); mostrar(); });
+selK.addEventListener("change", () => {
+    // Al elegir una comisión sin docente, se completa con el docente de esa comisión
+    const x = opciones.coms.find(x => x.c === selK.value);
+    if (x && x.prof && !prof()) {
+        const keep = selK.value;
+        selP.value = [...selP.options].find(o => plano(o.value) === plano(x.prof))?.value || "";
+        llenarFiltros();
+        selK.value = keep;
+    }
+    actualizarCamposLibres();
+    if (selK.value === OTRX) otraCom.focus();
     mostrar();
 });
-selM.addEventListener("change", mostrar);
-ciclo.addEventListener("change", mostrar);
+otraCom.addEventListener("change", () => mostrar());
+ciclo.addEventListener("change", () => mostrar());
 
-function mostrar() {
-    const ok = selC.value && selM.value;
+function mostrar(renovar = false) {
+    const listo = renovar ? prepararFiltros() : Promise.resolve();
+    const ok = selC.value && materia();
     $("planilla").hidden = !ok;
+    $("cargarInscriptos").hidden = !INSCRIPCIONES[selC.value];
+    $("aviso").hidden = true;
+    $("lblCom").hidden = !ok;
     if (!ok) return;
     $("pCarrera").textContent = selC.value;
-    $("pMateria").textContent = selM.value;
+    $("pMateria").textContent = materia();
+    $("pCom").textContent = comision() ? ` - Comisión ${comision()}` : "";
     $("pCiclo").textContent = ciclo.value;
-    docente.value = localStorage.getItem(claveDoc()) || "";
+    docente.value = prof() || localStorage.getItem(claveDoc()) || "";
     $("pDocente").textContent = docente.value;
     $("filas").innerHTML = "";
     const guardado = JSON.parse(localStorage.getItem(clave()) || "[]");
     (guardado.length ? guardado : [{}, {}, {}, {}, {}]).forEach(agregarFila);
+    if (!guardado.length && INSCRIPCIONES[selC.value]) listo.then(() => cargarInscriptos(true));
 }
 
 function agregarFila(d = {}) {
@@ -243,7 +392,7 @@ function leer() {
 }
 
 function guardar() {
-    if (selC.value && selM.value) localStorage.setItem(clave(), JSON.stringify(leer()));
+    if (selC.value && materia()) localStorage.setItem(clave(), JSON.stringify(leer()));
 }
 
 // Solo notas enteras de 0 a 10
@@ -256,6 +405,47 @@ $("filas").addEventListener("input", e => {
 $("filas").addEventListener("input", guardar);
 $("filas").addEventListener("change", guardar);
 $("agregar").onclick = () => { agregarFila(); $("filas").lastElementChild.querySelector(".legajo").focus(); };
+// silencioso = carga automática al elegir la materia (sin alertas si no hay inscriptos)
+async function cargarInscriptos(silencioso = false) {
+    const btn = $("cargarInscriptos"), txt = btn.textContent, k = clave();
+    btn.disabled = true; btn.textContent = "Cargando inscriptos...";
+    try {
+        const todos = await datosCarrera(selC.value, !silencioso);
+        if (k !== clave()) return; // cambió la selección mientras cargaba
+        const base = inscDeMateria(todos);
+        if (!silencioso) {
+            // "Recargar" también vuelve a leer el catálogo del repositorio
+            const cat = await datosCatalogo(selC.value, true).catch(() => null);
+            if (k !== clave()) return;
+            opciones = calcularOpciones(cat, base);
+            llenarFiltros();
+        }
+        const variosGrupos = distintos(base, s => s.profesor).length > 1 || distintos(base, s => s.comision).length > 1;
+        if (silencioso && (selP.value === OTRX || selK.value === OTRX)) return;
+        if (silencioso && variosGrupos && !selP.value && !selK.value) { $("aviso").hidden = false; return; }
+        $("aviso").hidden = true;
+        const insc = base.filter(s => (!prof() || plano(s.profesor) === plano(prof())) && (!comFiltro() || plano(s.comision) === plano(comFiltro())));
+        if (!insc.length) { if (!silencioso) alert("No se encontraron inscriptos para esta materia."); return; }
+
+        const id = s => s.legajo || s.nombre.toLowerCase();
+        const existentes = new Set(leer().map(id));
+        const nuevos = insc
+            .map(s => ({ legajo: s.legajo, nombre: [s.apellido, s.nombre].filter(Boolean).join(", ") }))
+            .filter((s, i, a) => a.findIndex(x => id(x) === id(s)) === i && !existentes.has(id(s)))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+        // Reemplaza las filas vacías en vez de dejarlas intercaladas
+        [...$("filas").rows].filter(r => !r.querySelector(".legajo").value && !r.querySelector(".nombre").value).forEach(r => r.remove());
+        nuevos.forEach(agregarFila);
+        guardar();
+        if (!silencioso) alert(nuevos.length ? `Se cargaron ${nuevos.length} inscripto(s).` : "Todos los inscriptos ya estaban en la planilla.");
+    } catch (e) {
+        if (!silencioso) alert("No se pudieron obtener los inscriptos: " + e.message);
+    } finally {
+        btn.disabled = false; btn.textContent = txt;
+    }
+}
+$("cargarInscriptos").onclick = () => cargarInscriptos(false);
 $("imprimir").onclick = () => window.print();
 $("limpiar").onclick = () => {
     if (confirm("¿Vaciar toda la planilla?")) { localStorage.removeItem(clave()); localStorage.removeItem(claveDoc()); mostrar(); }
@@ -271,7 +461,7 @@ async function enviarASheets() {
         await fetch(SHEETS_URL, {
             method: "POST", mode: "no-cors",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ carrera: selC.value, materia: selM.value, docente: docente.value, ciclo: ciclo.value, filas })
+            body: JSON.stringify({ carrera: selC.value, materia: materia(), comision: comision(), docente: docente.value, ciclo: ciclo.value, filas })
         });
     } catch (e) {
         alert("No se pudo enviar la planilla a Google Sheets. Revisá la conexión.");

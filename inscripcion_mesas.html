@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscripción a Mesas de Examen - Escuela Superior de Música</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+    :root { --accent: #7f0017; --text: #2f2e34; --soft: #6b6a75; --line: #d9d5cc; }
+    * { box-sizing: border-box; }
+    body { font-family: "Nunito Sans", "Futura PT", Futura, "Trebuchet MS", sans-serif; margin: 0; min-height: 100vh; color: var(--text);
+        background: radial-gradient(circle at 18% 0%, rgba(127,0,23,.12), transparent 34%), radial-gradient(circle at 84% 0%, rgba(8,8,8,.08), transparent 36%), linear-gradient(160deg, #f8f7f3, #efede7); }
+    .wrap { width: min(860px, 94vw); margin: 24px auto; background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(252,250,246,.96));
+        border: 1px solid #e4ddd4; border-radius: 18px; padding: 18px; box-shadow: 0 14px 42px rgba(64,40,22,.12); }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .brand img { height: 64px; }
+    .brand .l1 { font-weight: 900; letter-spacing: .5px; text-transform: uppercase; font-size: 1.05rem; color: #080808; }
+    .brand .l2 { font-weight: 700; font-size: .85rem; color: var(--accent); text-transform: uppercase; }
+    h1 { margin: 0 0 14px; font-size: clamp(1.3rem, 2.2vw, 2rem); font-weight: 800; color: var(--accent); }
+    h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .4px; }
+    .card { background: rgba(255,255,255,.92); border: 1px solid #e3ddd4; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .grid .full { grid-column: 1 / -1; }
+    label { display: flex; flex-direction: column; font-weight: 700; font-size: 13px; gap: 4px; }
+    label small { font-weight: 400; color: var(--soft); }
+    select, input { padding: 9px 10px; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; background: #fff; color: var(--text); width: 100%; }
+    select:focus, input:focus { outline: 2px solid rgba(127,0,23,.35); }
+    select:disabled { background: #f3f1ec; }
+    .row { display: flex; gap: 8px; }
+    button { padding: 10px 16px; border: 1px solid var(--accent); border-radius: 10px; cursor: pointer; font-size: 14px; font-family: inherit; background: linear-gradient(120deg, #7f0017, #5f0011); color: #fff; }
+    button.sec { background: #fff; color: var(--accent); white-space: nowrap; }
+    button:disabled { opacity: .6; cursor: default; }
+    .aviso { background: #f4ecee; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.6; }
+    .aviso strong { color: var(--accent); }
+    .aviso code { font-size: 15px; font-weight: 700; user-select: all; }
+    .ok { background: #edf6ee; border-color: #8bbf93; color: #1f5a2a; border-left-color: #2f8a41; }
+    .err { background: #fbeaea; border-color: #e0a5a5; color: #8a1f1f; }
+    .nota { font-size: 12px; color: var(--soft); margin-top: 6px; }
+    #preview { max-width: 100%; max-height: 220px; margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; }
+    [hidden] { display: none !important; }
+    .trampa { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="brand">
+        <img src="img/icono.png" alt="Logo Escuela Superior de Música">
+        <div>
+            <div class="l1">Escuela Superior de Música</div>
+            <div class="l2">de la Provincia de Salta - José Lo Giudice</div>
+        </div>
+    </div>
+    <h1>Inscripción a Mesas de Examen</h1>
+
+    <form id="form" novalidate autocomplete="on">
+        <div class="card">
+            <h2>Datos del estudiante</h2>
+            <div class="grid">
+                <label class="full">Mail
+                    <input type="email" id="email" autocomplete="email" placeholder="Te enviamos el comprobante de inscripción a este mail" required>
+                </label>
+                <label>Legajo
+                    <div class="row">
+                        <input type="text" id="legajo" inputmode="numeric" autocomplete="off" required>
+                        <button type="button" class="sec" id="buscar">Buscar</button>
+                    </div>
+                    <small id="estadoLegajo">Si estás inscripto/a, completamos tus datos con el legajo.</small>
+                </label>
+                <label>DNI
+                    <input type="text" id="dni" inputmode="numeric" autocomplete="off" required>
+                </label>
+                <label class="full">Nombre y Apellido
+                    <input type="text" id="nombre" autocomplete="name" required>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Mesa de examen</h2>
+            <div class="grid">
+                <label>Condición
+                    <select id="condicion" required>
+                        <option value="">-- Seleccionar --</option>
+                        <option>Regular</option><option>Libre</option><option>Promocional</option>
+                    </select>
+                </label>
+                <label>Llamado
+                    <select id="llamado" required>
+                        <option value="">-- Seleccionar --</option>
+                        <option>Primer Llamado</option><option>Segundo Llamado</option>
+                    </select>
+                </label>
+                <label class="full">Carrera
+                    <select id="carrera" required><option value="">-- Seleccionar carrera --</option></select>
+                </label>
+                <label>Año
+                    <select id="anio" disabled required><option value="">-- Seleccionar año --</option></select>
+                </label>
+                <label>Materia
+                    <select id="materia" disabled required><option value="">-- Seleccionar materia --</option></select>
+                    <input type="text" id="otraMateria" placeholder="Escribir nombre de la materia" hidden>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Pago</h2>
+            <div class="grid">
+                <label>Modo de pago
+                    <select id="pago" required>
+                        <option value="">-- Seleccionar --</option>
+                        <option>Efectivo</option><option>Transferencia</option>
+                    </select>
+                </label>
+                <label id="lblComprobante">Comprobante de pago <small id="reqComprobante">(imagen)</small>
+                    <input type="file" id="comprobante" accept="image/*">
+                    <img id="preview" alt="Vista previa del comprobante" hidden>
+                </label>
+                <div class="aviso full">
+                    <strong>Importante:</strong> es necesario transferir el pago a la cuenta<br>
+                    <strong>Esc. Sup. de Musica de la Pcia Jose Lo Giudice Plan Edilicio</strong><br>
+                    CBU: <code id="cbu">2850100640094916603868</code>
+                    <button type="button" class="sec" id="copiarCbu" style="padding:3px 10px;margin-left:6px">Copiar</button><br>
+                    Entidad Bancaria: Banco Macro
+                </div>
+            </div>
+        </div>
+
+        <input class="trampa" type="text" id="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div id="mensaje" class="aviso" hidden role="status"></div>
+        <div class="row" style="margin-top:12px">
+            <button type="submit" id="enviar">Inscribirme a la mesa</button>
+        </div>
+    </form>
+</div>
+
+<script src="js/catalogo_materias.js"></script>
+<script>
+// URL de la aplicación web de Apps Script (ver apps_script_mesas.gs). Vacío = no envía.
+const MESAS_URL = "https://script.google.com/macros/s/AKfycbw9W6ONxLtr7rwhl06X4rHcI784mGRkIIaszMLIpewsXyuZjLWHG-db5Q3mB17MxAMU2A/exec";
+
+// Planillas de inscripciones de donde se precargan nombre, apellido y DNI a partir del legajo.
+const FUENTES_LEGAJO = [
+    { carrera: "Trayecto Artístico Profesional (TAP)", sheetId: "1YoyK2aw8x-RJAANB4enPna8HWspLML8aAYr4D_epI2s" },
+    { carrera: "Iniciación Musical y Coro de Niños", sheetId: "1QRTPIEaMHVOR4SqIbf6jMFqnEVmxQJFmlpDAUTD0GRA" },
+    { carrera: "Talleres de Jóvenes y Adultos", sheetId: "1Mrfac8D86kZqDKJZJMR1qKe7j6E4bqTQKNPMTW_5TvY" }
+];
+const OTRA = "__otra__";
+const MAX_LADO = 1600; // px del comprobante antes de enviarlo
+
+const $ = id => document.getElementById(id);
+const selC = $("carrera"), selA = $("anio"), selM = $("materia"), otraMateria = $("otraMateria");
+Object.keys(CATALOGO).forEach(c => selC.add(new Option(c, c)));
+
+function llenar(sel, vacio, valores) {
+    sel.replaceChildren(new Option(vacio, ""), ...valores.map(v => new Option(v, v)));
+}
+
+selC.addEventListener("change", () => {
+    llenar(selA, "-- Seleccionar año --", Object.keys(CATALOGO[selC.value] || {}));
+    selA.disabled = !selC.value;
+    selA.dispatchEvent(new Event("change"));
+});
+selA.addEventListener("change", () => {
+    const materias = (CATALOGO[selC.value] || {})[selA.value] || [];
+    llenar(selM, "-- Seleccionar materia --", materias);
+    if (selA.value) selM.add(new Option("Otra (escribir)...", OTRA));
+    selM.disabled = !selA.value;
+    selM.dispatchEvent(new Event("change"));
+});
+selM.addEventListener("change", () => {
+    otraMateria.hidden = selM.value !== OTRA;
+    if (selM.value === OTRA) otraMateria.focus();
+});
+const materia = () => selM.value === OTRA ? otraMateria.value.trim() : selM.value;
+
+// ---- Precarga por legajo (gviz JSONP: pide solo la fila de ese legajo) ----
+function consultar(sheetId, where) {
+    return new Promise(resolve => {
+        const cb = "__leg" + Date.now() + Math.floor(Math.random() * 1e6);
+        const s = document.createElement("script");
+        const fin = v => { delete window[cb]; s.remove(); resolve(v); };
+        window[cb] = d => {
+            if (!d || d.status !== "ok" || !d.table.rows.length) return fin(null);
+            const v = c => (c && c.v != null ? String(c.v).trim() : "");
+            const r = d.table.rows.map(r => ({ nombre: v(r.c[0]), apellido: v(r.c[1]), dni: v(r.c[2]) })).find(x => x.nombre || x.apellido);
+            fin(r || null);
+        };
+        s.onerror = () => fin(null);
+        s.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=Inscripciones`
+            + `&tq=${encodeURIComponent("select C,D,F where " + where + " limit 5")}&tqx=${encodeURIComponent("out:json;responseHandler:" + cb)}`;
+        document.head.appendChild(s);
+    });
+}
+// La columna Legajo puede ser numérica o de texto según la planilla
+async function buscarEn(sheetId, legajo) {
+    if (/^\d+$/.test(legajo)) {
+        const r = await consultar(sheetId, `I = ${legajo}`);
+        if (r) return r;
+    }
+    return consultar(sheetId, `I = '${legajo}'`);
+}
+
+async function buscarLegajo() {
+    const legajo = $("legajo").value.trim();
+    const est = $("estadoLegajo");
+    if (!/^[\w.-]{1,20}$/.test(legajo)) { est.textContent = "Ingresá un legajo válido."; return; }
+    est.textContent = "Buscando...";
+    const res = await Promise.all(FUENTES_LEGAJO.map(f => buscarEn(f.sheetId, legajo).then(r => r && { ...r, carrera: f.carrera })));
+    const r = res.find(Boolean);
+    if (!r || legajo !== $("legajo").value.trim()) {
+        if (!r) est.textContent = "No encontramos ese legajo: completá tus datos a mano.";
+        return;
+    }
+    $("nombre").value = [r.nombre, r.apellido].filter(Boolean).join(" ");
+    if (r.dni) $("dni").value = r.dni;
+    if (!selC.value) { selC.value = r.carrera; selC.dispatchEvent(new Event("change")); }
+    est.textContent = "Datos completados: revisalos antes de enviar.";
+}
+$("buscar").onclick = buscarLegajo;
+$("legajo").addEventListener("change", buscarLegajo);
+
+$("copiarCbu").onclick = async e => {
+    try { await navigator.clipboard.writeText($("cbu").textContent); e.target.textContent = "Copiado"; }
+    catch { e.target.textContent = "Seleccionalo"; }
+    setTimeout(() => e.target.textContent = "Copiar", 1800);
+};
+
+// ---- Comprobante: se achica en el navegador para que el envío sea liviano ----
+let comprobante = null; // { nombre, tipo, base64 }
+function leerImagen(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onload = () => {
+            const k = Math.min(1, MAX_LADO / Math.max(img.width, img.height));
+            const cv = document.createElement("canvas");
+            cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+            cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+            URL.revokeObjectURL(url);
+            const dataUrl = cv.toDataURL("image/jpeg", 0.82);
+            resolve({ nombre: file.name.replace(/\.[^.]+$/, "") + ".jpg", tipo: "image/jpeg", base64: dataUrl.split(",")[1], dataUrl });
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("No se pudo leer la imagen. Probá con una foto JPG o PNG.")); };
+        img.src = url;
+    });
+}
+$("comprobante").addEventListener("change", async e => {
+    comprobante = null; $("preview").hidden = true;
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { e.target.value = ""; return mostrar("El comprobante debe ser una imagen.", "err"); }
+    try {
+        comprobante = await leerImagen(f);
+        $("preview").src = comprobante.dataUrl; $("preview").hidden = false;
+        $("mensaje").hidden = true;
+    } catch (err) { e.target.value = ""; mostrar(err.message, "err"); }
+});
+$("pago").addEventListener("change", () => {
+    $("reqComprobante").textContent = $("pago").value === "Transferencia" ? "(obligatorio)" : "(imagen, opcional)";
+});
+
+function mostrar(texto, tipo = "") {
+    const m = $("mensaje");
+    m.className = "aviso " + tipo; m.textContent = texto; m.hidden = false;
+    m.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function validar() {
+    const v = id => $(id).value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v("email"))) return "Ingresá un mail válido.";
+    if (!/^[\w.-]{1,20}$/.test(v("legajo"))) return "Ingresá tu legajo.";
+    if (v("nombre").length < 3) return "Ingresá tu nombre y apellido.";
+    if (!/^\d{6,9}$/.test(v("dni").replace(/\./g, ""))) return "Ingresá un DNI válido (solo números).";
+    for (const [id, txt] of [["condicion", "la condición"], ["llamado", "el llamado"], ["carrera", "la carrera"], ["anio", "el año"]])
+        if (!v(id)) return `Elegí ${txt}.`;
+    if (!materia()) return "Elegí o escribí la materia.";
+    if (!v("pago")) return "Elegí el modo de pago.";
+    if (v("pago") === "Transferencia" && !comprobante) return "Adjuntá el comprobante de la transferencia.";
+    return "";
+}
+
+$("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    if ($("web").value) return; // campo trampa: lo completan solo los bots
+    const error = validar();
+    if (error) return mostrar(error, "err");
+    if (!MESAS_URL) return mostrar("La inscripción todavía no está configurada (falta la URL del Apps Script).", "err");
+    const btn = $("enviar"); btn.disabled = true; btn.textContent = "Enviando...";
+    const v = id => $(id).value.trim();
+    const registro = {
+        email: v("email"), legajo: v("legajo"), nombre: v("nombre"), dni: v("dni").replace(/\./g, ""),
+        condicion: v("condicion"), llamado: v("llamado"), carrera: v("carrera"), anio: v("anio"),
+        materia: materia(), pago: v("pago")
+    };
+    try {
+        // Igual que en las inscripciones: POST sin CORS; la respuesta no es legible, el mail llega desde el Apps Script
+        await fetch(MESAS_URL, {
+            method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" },
+            body: JSON.stringify({ action: "mesa", registro, comprobante })
+        });
+        mostrar(`¡Listo! Registramos tu inscripción a ${registro.materia} (${registro.llamado}). En unos minutos te enviamos el comprobante a ${registro.email}. Si no lo ves, revisá la carpeta de spam.`, "ok");
+        $("form").reset(); comprobante = null; $("preview").hidden = true;
+        selC.dispatchEvent(new Event("change"));
+        $("estadoLegajo").textContent = "Si estás inscripto/a, completamos tus datos con el legajo.";
+    } catch (err) {
+        mostrar("No se pudo enviar la inscripción. Revisá tu conexión e intentá de nuevo.", "err");
+    } finally {
+        btn.disabled = false; btn.textContent = "Inscribirme a la mesa";
+    }
+});
+</script>
+</body>
+</html>
