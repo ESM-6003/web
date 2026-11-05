@@ -18,6 +18,7 @@ const PLANES = {
   tap: { gid: '139077271', vertical: true, nombre: 'Horarios_TAP', ajusteAncho: true },
   instrumento: { gid: '477446579', vertical: true, nombre: 'Horarios_Profesorado_Instrumento' },
   educacion: { gid: '0', vertical: true, nombre: 'Horarios_Profesorado_Educacion_Musical' },
+  im: { gid: '176004517', vertical: false, nombre: 'Horarios_Iniciacion_Musical_y_Coro' },
   propedeutico: { gid: '1602649099', vertical: false, nombre: 'Horarios_Propedeutico' },
 };
 
