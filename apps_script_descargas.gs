@@ -15,6 +15,7 @@ Solo se pueden descargar las hojas listadas en PLANES.
 const SPREADSHEET_ID = '1ZQRlsMtqVcihNWdtzSpA4T3TUkAMu2xvXqIBfP1HJNE';
 
 const PLANES = {
+  tap: { gid: '139077271', vertical: true, nombre: 'Horarios_TAP', ajusteAncho: true },
   instrumento: { gid: '477446579', vertical: true, nombre: 'Horarios_Profesorado_Instrumento' },
   educacion: { gid: '0', vertical: true, nombre: 'Horarios_Profesorado_Educacion_Musical' },
   propedeutico: { gid: '1602649099', vertical: false, nombre: 'Horarios_Propedeutico' },
@@ -26,9 +27,9 @@ function doGet(e) {
   try {
     const url = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/export?format=pdf'
       + '&gid=' + plan.gid + '&size=A4&portrait=' + plan.vertical
-      + '&scale=4&top_margin=0.25&bottom_margin=0.25&left_margin=0.25&right_margin=0.25'
+      + '&scale=' + (plan.ajusteAncho ? '2' : '4') + '&top_margin=0.25&bottom_margin=0.25&left_margin=0.25&right_margin=0.25'
       + '&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false'
-      + '&r1=0&c1=0&r2=100&c2=16';
+      + (plan.ajusteAncho ? '' : '&r1=0&c1=0&r2=100&c2=16');
     const resp = UrlFetchApp.fetch(url, {
       headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
       muteHttpExceptions: true,
