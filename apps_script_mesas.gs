@@ -21,8 +21,8 @@ const FOLDER_ID = '';        // vacío = se crea sola la primera vez
 const SHEET_NAME = 'Mesas';
 const NOTIFY_EMAIL = '';     // opcional: mail de secretaría que recibe copia de cada inscripción
 const LOGO_FILE_ID = '1lH8aa50D9wh7-9Xc3P9Gwkc86eCgwHkI'; // logo del cabezal (archivo de Drive)
-const LOGO_MAX_ANCHO = 140;
-const LOGO_MAX_ALTO = 110;
+const LOGO_MAX_ANCHO = 150; // el cabezal es un banner: poco alto, logo a la izquierda y títulos a la derecha
+const LOGO_MAX_ALTO = 42;
 const MAX_POR_HORA = 5;      // inscripciones por mail y por hora (evita abusos del envío de mails)
 const MAX_IMAGEN_BYTES = 6 * 1024 * 1024;
 
@@ -211,16 +211,24 @@ function parrafo_(contenedor, texto, extra, alineacion) {
 }
 
 function titulo_(body, texto) {
-  parrafo_(body, texto, { [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: 11 });
+  parrafo_(body, texto, { [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: 11 }).setSpacingBefore(0).setSpacingAfter(2);
 }
 
 function campo_(body, etiqueta, valor) {
   const v = String(valor == null ? '' : valor).trim();
   if (!v) return;
   const p = body.appendParagraph('');
-  p.setAttributes(atributos_());
+  p.setAttributes(atributos_({ [DocumentApp.Attribute.FONT_SIZE]: 10 }));
+  p.setSpacingBefore(0).setSpacingAfter(1);
   p.appendText(etiqueta + ': ').setAttributes(atributos_({ [DocumentApp.Attribute.BOLD]: true }));
   p.appendText(v).setAttributes(atributos_({ [DocumentApp.Attribute.BOLD]: false }));
+}
+
+// Separador chico entre bloques (en lugar de párrafos vacíos de tamaño normal)
+function espacio_(body, pts) {
+  const p = body.appendParagraph('');
+  p.setAttributes(atributos_({ [DocumentApp.Attribute.FONT_SIZE]: pts || 4 }));
+  p.setSpacingBefore(0).setSpacingAfter(0);
 }
 
 function cabezal_(body, legajo) {
@@ -228,15 +236,16 @@ function cabezal_(body, legajo) {
   tabla.setBorderWidth(0);
   const fila = tabla.getRow(0);
   const celdaLogo = fila.getCell(0), celdaTexto = fila.getCell(1);
-  [celdaLogo, celdaTexto].forEach(c => { c.setPaddingTop(0); c.setPaddingBottom(0); });
-  celdaLogo.setPaddingLeft(0).setPaddingRight(4).setWidth(150);
-  celdaTexto.setPaddingLeft(4).setPaddingRight(0);
+  celdaLogo.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(0).setPaddingRight(8).setWidth(LOGO_MAX_ANCHO + 8);
+  celdaTexto.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(4).setPaddingRight(0).setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+  celdaLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
 
+  // Se usa el párrafo que ya trae cada celda, para no sumar una línea vacía arriba
+  const pLogo = celdaLogo.getChild(0).asParagraph();
+  pLogo.setSpacingBefore(0).setSpacingAfter(0).setAlignment(DocumentApp.HorizontalAlignment.LEFT);
   if (LOGO_FILE_ID) {
     try {
-      const p = celdaLogo.appendParagraph('');
-      p.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-      const img = p.appendInlineImage(DriveApp.getFileById(LOGO_FILE_ID).getBlob());
+      const img = pLogo.appendInlineImage(DriveApp.getFileById(LOGO_FILE_ID).getBlob());
       const w = Number(img.getWidth()) || 1, h = Number(img.getHeight()) || 1;
       const k = Math.min(LOGO_MAX_ANCHO / w, LOGO_MAX_ALTO / h);
       img.setWidth(Math.max(1, Math.round(w * k))).setHeight(Math.max(1, Math.round(h * k)));
@@ -244,9 +253,11 @@ function cabezal_(body, legajo) {
   }
 
   const negrita = tam => ({ [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: tam });
-  parrafo_(celdaTexto, 'Comprobante de Inscripción a Mesa de Examen - Escuela Superior de Música', negrita(14)).setSpacingBefore(0).setSpacingAfter(2);
-  parrafo_(celdaTexto, 'N° 6003 - "José Lo Giudice"', negrita(13)).setSpacingBefore(0).setSpacingAfter(2);
-  parrafo_(celdaTexto, 'Legajo: ' + legajo, { [DocumentApp.Attribute.FONT_SIZE]: 12 }).setSpacingBefore(0).setSpacingAfter(0);
+  const l1 = celdaTexto.getChild(0).asParagraph();
+  l1.setText('Escuela Superior de Música N° 6003 - "José Lo Giudice"').setAttributes(atributos_(negrita(12)));
+  l1.setSpacingBefore(0).setSpacingAfter(1);
+  const l2 = parrafo_(celdaTexto, 'Legajo: ' + legajo, { [DocumentApp.Attribute.FONT_SIZE]: 10 });
+  l2.setSpacingBefore(0).setSpacingAfter(0);
 }
 
 function firma_(body) {
@@ -256,13 +267,17 @@ function firma_(body) {
   izq.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(0).setPaddingRight(0);
   der.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(12).setPaddingRight(0);
   const centro = DocumentApp.HorizontalAlignment.CENTER;
-  der.appendParagraph('');
-  parrafo_(der, '__________________________', null, centro);
-  parrafo_(der, 'Firma y Sello', null, centro);
-  parrafo_(der, 'Autoridad Escolar', null, centro);
-  parrafo_(der, 'Prof. José Néstor Mevoras Lencinas', { [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: 8 }, centro);
-  parrafo_(der, 'Rector Escuela Superior de Música "José Lo Giudice"', { [DocumentApp.Attribute.FONT_SIZE]: 8 }, centro);
-  parrafo_(der, 'IES N° 6003', { [DocumentApp.Attribute.FONT_SIZE]: 8 }, centro);
+  const chico = { [DocumentApp.Attribute.FONT_SIZE]: 8 };
+  const lineas = [
+    ['__________________________', null], ['Firma y Sello - Autoridad Escolar', chico],
+    ['Prof. José Néstor Mevoras Lencinas', { [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: 8 }],
+    ['Rector Escuela Superior de Música "José Lo Giudice" - IES N° 6003', chico],
+  ];
+  // El primer renglón reutiliza el párrafo de la celda, y el resto va debajo, sin espacios de más
+  lineas.forEach(([texto, estilo], i) => {
+    const p = i === 0 ? der.getChild(0).asParagraph().setText(texto).setAttributes(atributos_(estilo)) : parrafo_(der, texto, estilo);
+    p.setAlignment(centro).setSpacingBefore(0).setSpacingAfter(0);
+  });
 }
 
 // PDF simple (HTML -> PDF), el formato anterior: se usa de respaldo si falla el Documento de Google
@@ -274,14 +289,14 @@ function constanciaPdfSimple_(reg) {
   let logo = '';
   try {
     const b = DriveApp.getFileById(LOGO_FILE_ID).getBlob();
-    logo = '<img src="data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) + '" style="height:70px"><br>';
+    logo = '<img src="data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) + '" style="height:42px"><br>';
   } catch (_e) { /* sin logo */ }
-  const fila = (k, v) => '<tr><td style="padding:6px 10px;border:1px solid #bbb;background:#f3f3f3;width:32%"><b>' + esc_(k)
-    + '</b></td><td style="padding:6px 10px;border:1px solid #bbb">' + esc_(v) + '</td></tr>';
-  const html = '<html><body style="font-family:Arial,sans-serif;font-size:13px;color:#222">'
-    + '<div style="text-align:center">' + logo + '<div style="font-size:15px;font-weight:bold">' + esc_(ESCUELA) + '</div>'
-    + '<div style="font-size:12px">IES N° 6003</div>'
-    + '<h2 style="color:#7f0017;margin:16px 0 4px">COMPROBANTE DE INSCRIPCIÓN A MESA DE EXAMEN</h2>'
+  const fila = (k, v) => '<tr><td style="padding:3px 8px;border:1px solid #bbb;background:#f3f3f3;width:32%"><b>' + esc_(k)
+    + '</b></td><td style="padding:3px 8px;border:1px solid #bbb">' + esc_(v) + '</td></tr>';
+  const html = '<html><body style="font-family:Arial,sans-serif;font-size:12px;color:#222">'
+    + '<div style="text-align:center">' + logo + '<div style="font-size:14px;font-weight:bold">' + esc_(ESCUELA) + '</div>'
+    + '<div style="font-size:11px">IES N° 6003</div>'
+    + '<h2 style="color:#7f0017;margin:8px 0 2px;font-size:15px">COMPROBANTE DE INSCRIPCIÓN A MESA DE EXAMEN</h2>'
     + '<div>N° ' + esc_(reg.id) + '</div></div><br>'
     + '<table style="border-collapse:collapse;width:100%">'
     + fila('Nombre y Apellido', reg.nombre) + fila('DNI', reg.dni) + fila('Legajo', reg.legajo) + fila('Mail', reg.email)
@@ -301,19 +316,22 @@ function constanciaPdf_(reg) {
     doc = DocumentApp.create('mesa_tmp_' + Date.now() + '_' + Math.floor(Math.random() * 100000));
     const body = doc.getBody();
     body.clear();
+    // A4 con márgenes chicos: el comprobante tiene que entrar siempre en una sola hoja
+    body.setPageWidth(595.28).setPageHeight(841.89);
+    body.setMarginTop(28).setMarginBottom(28).setMarginLeft(40).setMarginRight(40);
 
     cabezal_(body, reg.legajo);
     body.appendHorizontalRule();
-    parrafo_(body, 'COMPROBANTE DE INSCRIPCIÓN A MESA DE EXAMEN',
-      { [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: 16 }, DocumentApp.HorizontalAlignment.CENTER);
-    body.appendParagraph('');
+    const titulo = parrafo_(body, 'COMPROBANTE DE INSCRIPCIÓN A MESA DE EXAMEN',
+      { [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: 14 }, DocumentApp.HorizontalAlignment.CENTER);
+    titulo.setSpacingBefore(2).setSpacingAfter(4);
 
     titulo_(body, 'Datos del Estudiante:');
     campo_(body, 'Nombre y Apellido', reg.nombre);
     campo_(body, 'DNI', reg.dni);
     campo_(body, 'Legajo', reg.legajo);
     campo_(body, 'Mail', reg.email);
-    body.appendParagraph('');
+    espacio_(body);
 
     titulo_(body, 'Datos de la Mesa de Examen:');
     const tabla = body.appendTable([
@@ -324,25 +342,28 @@ function constanciaPdf_(reg) {
     for (let i = 0; i < tabla.getNumRows(); i++) {
       for (let j = 0; j < tabla.getRow(i).getNumCells(); j++) {
         const c = tabla.getRow(i).getCell(j);
-        c.setPaddingTop(4).setPaddingBottom(4).setPaddingLeft(5).setPaddingRight(5);
+        c.setPaddingTop(3).setPaddingBottom(3).setPaddingLeft(5).setPaddingRight(5);
         if (i === 0) c.setBackgroundColor('#EAEAEA');
-        c.getChild(0).asParagraph().editAsText().setBold(i === 0).setFontSize(8);
+        c.getChild(0).asParagraph().setSpacingBefore(0).setSpacingAfter(0).editAsText().setBold(i === 0).setFontSize(8);
       }
     }
-    body.appendParagraph('');
+    espacio_(body);
 
     titulo_(body, 'Información de Pago:');
     campo_(body, 'Modo de pago', reg.pago);
     campo_(body, 'Comprobante de pago', reg.comprobanteUrl ? 'Recibido' : 'No adjuntado');
-    body.appendParagraph('');
     campo_(body, 'Fecha de emisión', Utilities.formatDate(reg.fecha, tz_(), 'dd/MM/yyyy HH:mm'));
     campo_(body, 'N° de inscripción', reg.id);
+    espacio_(body, 10);
 
-    body.appendParagraph('');
     firma_(body);
-    body.appendParagraph('');
-    parrafo_(body, 'Este comprobante acredita el registro de la inscripción. La validez del pago está sujeta a su verificación por la institución.',
+    espacio_(body);
+    const pie = parrafo_(body, 'Este comprobante acredita el registro de la inscripción. La validez del pago está sujeta a su verificación por la institución.',
       { [DocumentApp.Attribute.FONT_SIZE]: 7, [DocumentApp.Attribute.FOREGROUND_COLOR]: '#808080' }, DocumentApp.HorizontalAlignment.CENTER);
+    pie.setSpacingBefore(0).setSpacingAfter(0);
+
+    // body.clear() deja un párrafo vacío arriba del cabezal: se quita
+    try { const primero = body.getChild(0); if (primero.getType() === DocumentApp.ElementType.PARAGRAPH && !primero.asParagraph().getText()) primero.removeFromParent(); } catch (_e) { /* no-op */ }
 
     doc.saveAndClose();
     archivo = DriveApp.getFileById(doc.getId());
