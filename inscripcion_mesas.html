@@ -107,25 +107,19 @@
         </div>
 
         <div class="card">
-            <h2>Pago</h2>
+            <h2>Comprobante de Transferencia</h2>
             <div class="grid">
-                <label>Modo de pago
-                    <select id="pago" required>
-                        <option value="">-- Seleccionar --</option>
-                        <option>Efectivo</option><option>Transferencia</option>
-                    </select>
-                </label>
-                <label id="lblComprobante">Comprobante de pago <small id="reqComprobante">(imagen)</small>
+                <label id="lblComprobante" class="full">Comprobante de pago <small id="reqComprobante">(se determinará según condición)</small>
                     <input type="file" id="comprobante" accept="image/*">
                     <img id="preview" alt="Vista previa del comprobante" hidden>
                 </label>
-                <div class="aviso full">
-                    <strong>Importante:</strong> es necesario transferir el pago a la cuenta<br>
-                    <strong>Esc. Sup. de Musica de la Pcia Jose Lo Giudice Plan Edilicio</strong><br>
-                    CBU: <code id="cbu">2850100640094916603868</code>
-                    <button type="button" class="sec" id="copiarCbu" style="padding:3px 10px;margin-left:6px">Copiar</button><br>
-                    Entidad Bancaria: Banco Macro
-                </div>
+            </div>
+            <div class="aviso full">
+                <strong>Importante:</strong> es necesario transferir el pago a la cuenta<br>
+                <strong>Esc. Sup. de Musica de la Pcia Jose Lo Giudice Plan Edilicio</strong><br>
+                CBU: <code id="cbu">2850100640094916603868</code>
+                <button type="button" class="sec" id="copiarCbu" style="padding:3px 10px;margin-left:6px">Copiar</button><br>
+                Entidad Bancaria: Banco Macro
             </div>
         </div>
 
@@ -185,11 +179,26 @@ selA.addEventListener("change", () => {
 });
 selM.addEventListener("change", () => {
     actualizarCorrelativas();
+    actualizarEstadoComprobante();
 });
 const materia = () => selM.value;
 let fotosLibreta = [];
 let aceptaDeclaracion = false;
 let revisionCorrelativas = 0;
+
+function actualizarEstadoComprobante() {
+    const condicion = $("condicion").value;
+    const regla = buscarRegla($("carrera").value, selM.value);
+    const cantidadFotos = regla ? regla.approved.length : 0;
+    const esLibre = condicion === "Libre";
+    const tieneComoRequisito = cantidadFotos > 0;
+    
+    if (esLibre || tieneComoRequisito) {
+        $("reqComprobante").textContent = "(obligatorio)";
+    } else {
+        $("reqComprobante").textContent = "(opcional)";
+    }
+}
 
 function normalizarMateria(texto) {
     return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -232,19 +241,24 @@ function actualizarCorrelativas() {
     info.appendChild(texto);
     info.hidden = false;
 
-    fotos.hidden = !aprobadas.length;
-    aprobadas.forEach((nombre, indice) => {
+    // Mostrar sección de fotos si hay regularizadas O aprobadas
+    fotos.hidden = !regular.length && !aprobadas.length;
+    
+    // Crear campos para regularizadas (opcionales)
+    regular.forEach((nombre, indice) => {
         const revision = revisionCorrelativas;
         const contenedor = document.createElement("label");
         contenedor.className = "libreta-slot";
         const titulo = document.createElement("span");
-        titulo.textContent = `Foto de la libreta: ${nombre}`;
+        titulo.textContent = `Foto de la libreta: ${nombre} (opcional)`;
         const entrada = document.createElement("input");
         entrada.type = "file";
         entrada.accept = "image/*";
-        entrada.required = true;
+        entrada.required = false;
+        entrada.multiple = false;
+        entrada.id = `foto_regular_${indice}_${Date.now()}`;
         entrada.addEventListener("change", async () => {
-            fotosLibreta[indice] = null;
+            fotosLibreta[`regular_${indice}`] = null;
             const anterior = contenedor.querySelector("img");
             if (anterior) anterior.remove();
             const archivo = entrada.files[0];
@@ -256,7 +270,48 @@ function actualizarCorrelativas() {
             try {
                 const imagen = await leerImagen(archivo);
                 if (revision !== revisionCorrelativas) return;
-                fotosLibreta[indice] = { ...imagen, materia: nombre };
+                fotosLibreta[`regular_${indice}`] = { ...imagen, materia: nombre };
+                const vista = document.createElement("img");
+                vista.src = imagen.dataUrl;
+                vista.alt = `Vista previa: ${nombre}`;
+                contenedor.appendChild(vista);
+                $("mensaje").hidden = true;
+            } catch (err) {
+                entrada.value = "";
+                mostrar(err.message, "err");
+            }
+        });
+        contenedor.append(titulo, entrada);
+        campos.appendChild(contenedor);
+    });
+    
+    // Crear campos para aprobadas (obligatorias)
+    aprobadas.forEach((nombre, indice) => {
+        const revision = revisionCorrelativas;
+        const contenedor = document.createElement("label");
+        contenedor.className = "libreta-slot";
+        const titulo = document.createElement("span");
+        titulo.textContent = `Foto de la libreta: ${nombre}`;
+        const entrada = document.createElement("input");
+        entrada.type = "file";
+        entrada.accept = "image/*";
+        entrada.required = true;
+        entrada.multiple = false;
+        entrada.id = `foto_aprobada_${indice}_${Date.now()}`;
+        entrada.addEventListener("change", async () => {
+            fotosLibreta[`aprobada_${indice}`] = null;
+            const anterior = contenedor.querySelector("img");
+            if (anterior) anterior.remove();
+            const archivo = entrada.files[0];
+            if (!archivo) return;
+            if (!archivo.type.startsWith("image/")) {
+                entrada.value = "";
+                return mostrar("Las fotos de la libreta deben ser imágenes.", "err");
+            }
+            try {
+                const imagen = await leerImagen(archivo);
+                if (revision !== revisionCorrelativas) return;
+                fotosLibreta[`aprobada_${indice}`] = { ...imagen, materia: nombre };
                 const vista = document.createElement("img");
                 vista.src = imagen.dataUrl;
                 vista.alt = `Vista previa: ${nombre}`;
@@ -318,6 +373,10 @@ async function buscarLegajo() {
 $("buscar").onclick = buscarLegajo;
 $("legajo").addEventListener("change", buscarLegajo);
 
+$("condicion").addEventListener("change", () => {
+    actualizarEstadoComprobante();
+});
+
 $("copiarCbu").onclick = async e => {
     try { await navigator.clipboard.writeText($("cbu").textContent); e.target.textContent = "Copiado"; }
     catch { e.target.textContent = "Seleccionalo"; }
@@ -359,9 +418,6 @@ $("comprobante").addEventListener("change", async e => {
         $("mensaje").hidden = true;
     } catch (err) { e.target.value = ""; mostrar(err.message, "err"); }
 });
-$("pago").addEventListener("change", () => {
-    $("reqComprobante").textContent = $("pago").value === "Transferencia" ? "(obligatorio)" : "(imagen, opcional)";
-});
 
 function mostrar(texto, tipo = "") {
     const m = $("mensaje");
@@ -378,12 +434,28 @@ function validar() {
     for (const [id, txt] of [["condicion", "la condición"], ["carrera", "la carrera"], ["anio", "el año"]])
         if (!v(id)) return `Elegí ${txt}.`;
     if (!materia()) return "Elegí la materia.";
+    
     const regla = buscarRegla(v("carrera"), materia());
-    const cantidadFotos = regla ? regla.approved.length : 0;
-    if (fotosLibreta.filter(Boolean).length !== cantidadFotos)
+    const plan = CORRELATIVAS_MESAS[v("carrera")];
+    const cursos = plan ? plan.courses : {};
+    const lista = codigos => codigos.map(codigo => cursos[codigo.trim()] || `Correlativa ${codigo.trim()} (verificar plan)`);
+    const regularizadas = regla ? lista(regla.regular) : [];
+    const aprobadas = regla ? lista(regla.approved) : [];
+    
+    // Validar que todas las aprobadas tengan foto (obligatorias)
+    const fotosAprobadas = aprobadas.filter((_, i) => fotosLibreta[`aprobada_${i}`]);
+    if (fotosAprobadas.length !== aprobadas.length) {
         return "Adjuntá una foto legible de la libreta por cada materia que debés tener aprobada.";
-    if (!v("pago")) return "Elegí el modo de pago.";
-    if (v("pago") === "Transferencia" && !comprobante) return "Adjuntá el comprobante de la transferencia.";
+    }
+    
+    // Comprobante: obligatorio si es "Libre" o si hay materias (regularizadas o aprobadas)
+    const esLibre = v("condicion") === "Libre";
+    const tieneCorrelativas = regularizadas.length > 0 || aprobadas.length > 0;
+    
+    if ((esLibre || tieneCorrelativas) && !comprobante) {
+        return "Adjuntá el comprobante de la transferencia.";
+    }
+    
     if (!aceptaDeclaracion) return "Aceptá la declaración jurada para continuar.";
     return "";
 }
@@ -398,7 +470,7 @@ $("form").addEventListener("submit", async e => {
     const v = id => $(id).value.trim();
     const registro = {
         email: v("email"), legajo: v("legajo"), nombre: v("nombre"), dni: v("dni").replace(/\./g, ""),
-        condicion: v("condicion"), carrera: v("carrera"), anio: v("anio"), materia: materia(), pago: v("pago"),
+        condicion: v("condicion"), carrera: v("carrera"), anio: v("anio"), materia: materia(),
         declaracionAceptada: aceptaDeclaracion
     };
     try {
