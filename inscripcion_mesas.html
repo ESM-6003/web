@@ -37,6 +37,10 @@
     .err { background: #fbeaea; border-color: #e0a5a5; color: #8a1f1f; }
     .nota { font-size: 12px; color: var(--soft); margin-top: 6px; }
     #preview { max-width: 100%; max-height: 220px; margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; }
+    .correlativas { font-size: 13px; padding: 8px 11px; }
+    .libreta-slot { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #faf9f6; }
+    .libreta-slot img { max-width: 100%; max-height: 180px; margin-top: 8px; border-radius: 8px; }
+    #aceptar[aria-pressed="true"] { background: #edf6ee; color: #1f5a2a; border-color: #8bbf93; }
     [hidden] { display: none !important; }
     .trampa { position: absolute; left: -9999px; }
 </style>
@@ -81,13 +85,7 @@
                 <label>Condición
                     <select id="condicion" required>
                         <option value="">-- Seleccionar --</option>
-                        <option>Regular</option><option>Libre</option><option>Promocional</option>
-                    </select>
-                </label>
-                <label>Llamado
-                    <select id="llamado" required>
-                        <option value="">-- Seleccionar --</option>
-                        <option>Primer Llamado</option><option>Segundo Llamado</option>
+                        <option>Regular</option><option>Libre</option>
                     </select>
                 </label>
                 <label class="full">Carrera
@@ -98,8 +96,13 @@
                 </label>
                 <label>Materia
                     <select id="materia" disabled required><option value="">-- Seleccionar materia --</option></select>
-                    <input type="text" id="otraMateria" placeholder="Escribir nombre de la materia" hidden>
                 </label>
+                <div id="infoCorrelativas" class="aviso correlativas full" hidden aria-live="polite"></div>
+                <div id="fotosLibreta" class="full" hidden>
+                    <h2>Fotos de la libreta</h2>
+                    <p class="nota">Subí una foto legible por cada materia que el plan exige tener aprobada.</p>
+                    <div id="camposLibreta" class="grid"></div>
+                </div>
             </div>
         </div>
 
@@ -126,6 +129,16 @@
             </div>
         </div>
 
+        <div class="card">
+            <h2>Declaración jurada</h2>
+            <div class="aviso">
+                Declaro que todos los datos consignados en la presente inscripción son verídicos y válidos. 
+                En caso de comprobarse la falsedad o invalidez de alguno de ellos, quedaré inhabilitado/a para rendir el examen correspondiente. 
+                Si la irregularidad fuera detectada con posterioridad a su realización, el examen perderá automáticamente su validez.
+            </div>
+            <button type="button" class="sec" id="aceptar" aria-pressed="false" style="margin-top:10px">Estoy de acuerdo</button>
+        </div>
+
         <input class="trampa" type="text" id="web" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div id="mensaje" class="aviso" hidden role="status"></div>
         <div class="row" style="margin-top:12px">
@@ -135,22 +148,25 @@
 </div>
 
 <script src="js/catalogo_materias.js"></script>
+<script src="js/correlativas_mesas.js"></script>
 <script>
 // URL de la aplicación web de Apps Script (ver apps_script_mesas.gs). Vacío = no envía.
 const MESAS_URL = "https://script.google.com/macros/s/AKfycbw9W6ONxLtr7rwhl06X4rHcI784mGRkIIaszMLIpewsXyuZjLWHG-db5Q3mB17MxAMU2A/exec";
 
 // Planillas de inscripciones de donde se precargan nombre, apellido y DNI a partir del legajo.
 const FUENTES_LEGAJO = [
-    { carrera: "Trayecto Artístico Profesional (TAP)", sheetId: "1YoyK2aw8x-RJAANB4enPna8HWspLML8aAYr4D_epI2s" },
-    { carrera: "Iniciación Musical y Coro de Niños", sheetId: "1QRTPIEaMHVOR4SqIbf6jMFqnEVmxQJFmlpDAUTD0GRA" },
-    { carrera: "Talleres de Jóvenes y Adultos", sheetId: "1Mrfac8D86kZqDKJZJMR1qKe7j6E4bqTQKNPMTW_5TvY" }
+    { carrera: "Trayecto Artístico Profesional (TAP)", sheetId: "1YoyK2aw8x-RJAANB4enPna8HWspLML8aAYr4D_epI2s" }
 ];
-const OTRA = "__otra__";
 const MAX_LADO = 1600; // px del comprobante antes de enviarlo
 
 const $ = id => document.getElementById(id);
-const selC = $("carrera"), selA = $("anio"), selM = $("materia"), otraMateria = $("otraMateria");
-Object.keys(CATALOGO).forEach(c => selC.add(new Option(c, c)));
+const selC = $("carrera"), selA = $("anio"), selM = $("materia");
+const CARRERAS_MESAS = [
+    "Trayecto Artístico Profesional (TAP)",
+    "Profesorado de Música con Orientación en Instrumento",
+    "Profesorado en Música con Orientación en Educación Musical"
+];
+CARRERAS_MESAS.filter(c => CATALOGO[c]).forEach(c => selC.add(new Option(c, c)));
 
 function llenar(sel, vacio, valores) {
     sel.replaceChildren(new Option(vacio, ""), ...valores.map(v => new Option(v, v)));
@@ -164,15 +180,97 @@ selC.addEventListener("change", () => {
 selA.addEventListener("change", () => {
     const materias = (CATALOGO[selC.value] || {})[selA.value] || [];
     llenar(selM, "-- Seleccionar materia --", materias);
-    if (selA.value) selM.add(new Option("Otra (escribir)...", OTRA));
     selM.disabled = !selA.value;
     selM.dispatchEvent(new Event("change"));
 });
 selM.addEventListener("change", () => {
-    otraMateria.hidden = selM.value !== OTRA;
-    if (selM.value === OTRA) otraMateria.focus();
+    actualizarCorrelativas();
 });
-const materia = () => selM.value === OTRA ? otraMateria.value.trim() : selM.value;
+const materia = () => selM.value;
+let fotosLibreta = [];
+let aceptaDeclaracion = false;
+let revisionCorrelativas = 0;
+
+function normalizarMateria(texto) {
+    return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\binstrumenta\b/g, "instrumental").replace(/\s+/g, " ").trim();
+}
+
+function buscarRegla(carrera, nombre) {
+    const reglas = (CORRELATIVAS_MESAS[carrera] || {}).rules || [];
+    const nombreNormalizado = normalizarMateria(nombre);
+    return reglas.find(r => {
+        const titulo = normalizarMateria(r.title);
+        return nombreNormalizado === titulo || nombreNormalizado.startsWith(titulo + ":");
+    });
+}
+
+function actualizarCorrelativas() {
+    const info = $("infoCorrelativas"), fotos = $("fotosLibreta"), campos = $("camposLibreta");
+    revisionCorrelativas++;
+    fotosLibreta = [];
+    campos.replaceChildren();
+    if (!selM.value) {
+        info.hidden = true;
+        fotos.hidden = true;
+        return;
+    }
+
+    const plan = CORRELATIVAS_MESAS[selC.value];
+    const regla = buscarRegla(selC.value, selM.value);
+    const cursos = plan ? plan.courses : {};
+    const lista = codigos => codigos.map(codigo => cursos[codigo.trim()] || `Correlativa ${codigo.trim()} (verificar plan)`);
+    const regular = regla ? lista(regla.regular) : [];
+    const aprobadas = regla ? lista(regla.approved) : [];
+    info.innerHTML = "";
+    const texto = document.createElement("span");
+    texto.textContent = [
+        regular.length ? `Debe tener regularizadas: ${regular.join(", ")}.` : "",
+        aprobadas.length ? `Debe tener aprobadas: ${aprobadas.join(", ")}.` : "",
+        !regular.length && !aprobadas.length ? "El plan no indica correlativas para rendir esta materia." : ""
+    ].filter(Boolean).join(" ");
+    info.appendChild(texto);
+    info.hidden = false;
+
+    fotos.hidden = !aprobadas.length;
+    aprobadas.forEach((nombre, indice) => {
+        const revision = revisionCorrelativas;
+        const contenedor = document.createElement("label");
+        contenedor.className = "libreta-slot";
+        const titulo = document.createElement("span");
+        titulo.textContent = `Foto de la libreta: ${nombre}`;
+        const entrada = document.createElement("input");
+        entrada.type = "file";
+        entrada.accept = "image/*";
+        entrada.required = true;
+        entrada.addEventListener("change", async () => {
+            fotosLibreta[indice] = null;
+            const anterior = contenedor.querySelector("img");
+            if (anterior) anterior.remove();
+            const archivo = entrada.files[0];
+            if (!archivo) return;
+            if (!archivo.type.startsWith("image/")) {
+                entrada.value = "";
+                return mostrar("Las fotos de la libreta deben ser imágenes.", "err");
+            }
+            try {
+                const imagen = await leerImagen(archivo);
+                if (revision !== revisionCorrelativas) return;
+                fotosLibreta[indice] = { ...imagen, materia: nombre };
+                const vista = document.createElement("img");
+                vista.src = imagen.dataUrl;
+                vista.alt = `Vista previa: ${nombre}`;
+                contenedor.appendChild(vista);
+                $("mensaje").hidden = true;
+            } catch (err) {
+                entrada.value = "";
+                mostrar(err.message, "err");
+            }
+        });
+        contenedor.append(titulo, entrada);
+        campos.appendChild(contenedor);
+    });
+}
 
 // ---- Precarga por legajo (gviz JSONP: pide solo la fila de ese legajo) ----
 function consultar(sheetId, where) {
@@ -226,6 +324,12 @@ $("copiarCbu").onclick = async e => {
     setTimeout(() => e.target.textContent = "Copiar", 1800);
 };
 
+$("aceptar").addEventListener("click", e => {
+    aceptaDeclaracion = !aceptaDeclaracion;
+    e.currentTarget.setAttribute("aria-pressed", String(aceptaDeclaracion));
+    e.currentTarget.textContent = aceptaDeclaracion ? "Estoy de acuerdo ✓" : "Estoy de acuerdo";
+});
+
 // ---- Comprobante: se achica en el navegador para que el envío sea liviano ----
 let comprobante = null; // { nombre, tipo, base64 }
 function leerImagen(file) {
@@ -271,11 +375,16 @@ function validar() {
     if (!/^[\w.-]{1,20}$/.test(v("legajo"))) return "Ingresá tu legajo.";
     if (v("nombre").length < 3) return "Ingresá tu nombre y apellido.";
     if (!/^\d{6,9}$/.test(v("dni").replace(/\./g, ""))) return "Ingresá un DNI válido (solo números).";
-    for (const [id, txt] of [["condicion", "la condición"], ["llamado", "el llamado"], ["carrera", "la carrera"], ["anio", "el año"]])
+    for (const [id, txt] of [["condicion", "la condición"], ["carrera", "la carrera"], ["anio", "el año"]])
         if (!v(id)) return `Elegí ${txt}.`;
-    if (!materia()) return "Elegí o escribí la materia.";
+    if (!materia()) return "Elegí la materia.";
+    const regla = buscarRegla(v("carrera"), materia());
+    const cantidadFotos = regla ? regla.approved.length : 0;
+    if (fotosLibreta.filter(Boolean).length !== cantidadFotos)
+        return "Adjuntá una foto legible de la libreta por cada materia que debés tener aprobada.";
     if (!v("pago")) return "Elegí el modo de pago.";
     if (v("pago") === "Transferencia" && !comprobante) return "Adjuntá el comprobante de la transferencia.";
+    if (!aceptaDeclaracion) return "Aceptá la declaración jurada para continuar.";
     return "";
 }
 
@@ -289,17 +398,27 @@ $("form").addEventListener("submit", async e => {
     const v = id => $(id).value.trim();
     const registro = {
         email: v("email"), legajo: v("legajo"), nombre: v("nombre"), dni: v("dni").replace(/\./g, ""),
-        condicion: v("condicion"), llamado: v("llamado"), carrera: v("carrera"), anio: v("anio"),
-        materia: materia(), pago: v("pago")
+        condicion: v("condicion"), carrera: v("carrera"), anio: v("anio"), materia: materia(), pago: v("pago"),
+        declaracionAceptada: aceptaDeclaracion
     };
     try {
         // Igual que en las inscripciones: POST sin CORS; la respuesta no es legible, el mail llega desde el Apps Script
         await fetch(MESAS_URL, {
             method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" },
-            body: JSON.stringify({ action: "mesa", registro, comprobante })
+            body: JSON.stringify({
+                action: "mesa",
+                registro,
+                comprobante: comprobante && { nombre: comprobante.nombre, tipo: comprobante.tipo, base64: comprobante.base64 },
+                fotosLibreta: fotosLibreta.map(({ nombre, tipo, base64, materia: nombreMateria }) => ({
+                    nombre, tipo, base64, materia: nombreMateria
+                }))
+            })
         });
-        mostrar(`¡Listo! Registramos tu inscripción a ${registro.materia} (${registro.llamado}). En unos minutos te enviamos el comprobante a ${registro.email}. Si no lo ves, revisá la carpeta de spam.`, "ok");
+        mostrar(`¡Listo! Registramos tu inscripción a ${registro.materia}. En unos minutos te enviamos el comprobante a ${registro.email}. Si no lo ves, revisá la carpeta de spam.`, "ok");
         $("form").reset(); comprobante = null; $("preview").hidden = true;
+        fotosLibreta = []; aceptaDeclaracion = false;
+        $("aceptar").setAttribute("aria-pressed", "false");
+        $("aceptar").textContent = "Estoy de acuerdo";
         selC.dispatchEvent(new Event("change"));
         $("estadoLegajo").textContent = "Si estás inscripto/a, completamos tus datos con el legajo.";
     } catch (err) {
