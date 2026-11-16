@@ -23,6 +23,44 @@
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="css/style.css" rel="stylesheet">
+
+    <script>
+        (function () {
+            var docentePassword = 'prof';
+            var storageKey = 'esm-docente-access';
+
+            function redirectToHome() {
+                window.location.replace('index.html');
+            }
+
+            async function requirePassword() {
+                if (window.sessionStorage.getItem(storageKey) === 'granted') {
+                    document.documentElement.style.visibility = '';
+                    return;
+                }
+
+                while (true) {
+                    var password = window.prompt('Ingrese la contraseña para acceder a Docentes:');
+
+                    if (password === null) {
+                        redirectToHome();
+                        return;
+                    }
+
+                    if (password === docentePassword) {
+                        window.sessionStorage.setItem(storageKey, 'granted');
+                        document.documentElement.style.visibility = '';
+                        return;
+                    }
+
+                    window.alert('Contrasena incorrecta.');
+                }
+            }
+
+            document.documentElement.style.visibility = 'hidden';
+            requirePassword().catch(redirectToHome);
+        })();
+    </script>
 </head>
 
 <body>
