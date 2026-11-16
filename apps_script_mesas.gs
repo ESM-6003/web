@@ -3,7 +3,7 @@ Apps Script Web App: inscripción a mesas de examen.
 
 Qué hace con cada inscripción:
   1) Agrega una fila a la hoja "Mesas" de una planilla de Google Sheets.
-  2) Guarda la imagen del comprobante de pago en una carpeta de Drive.
+  2) Guarda el comprobante de pago y las fotos de la libreta en una carpeta de Drive.
   3) Genera la constancia de inscripción en PDF y se la envía por mail al estudiante.
   4) (Opcional) avisa a la secretaría con el comprobante adjunto.
 
@@ -25,14 +25,15 @@ const LOGO_MAX_ANCHO = 150; // el cabezal es un banner: poco alto, logo a la izq
 const LOGO_MAX_ALTO = 42;
 const MAX_POR_HORA = 5;      // inscripciones por mail y por hora (evita abusos del envío de mails)
 const MAX_IMAGEN_BYTES = 6 * 1024 * 1024;
+const MAX_LIBRETA_IMAGENES = 30;
+const MAX_LIBRETA_TOTAL_BYTES = 20 * 1024 * 1024;
 
 const ESCUELA = 'Escuela Superior de Música de la Provincia de Salta "José Lo Giudice"';
 const CAMPOS = ['id', 'fecha_inscripcion', 'email', 'legajo', 'nombre_apellido', 'dni', 'condicion', 'llamado',
-  'carrera', 'anio', 'materia', 'modo_pago', 'comprobante', 'mail_enviado'];
+  'carrera', 'anio', 'materia', 'modo_pago', 'comprobante', 'mail_enviado', 'fotos_libreta', 'declaracion_aceptada'];
 
 const LISTAS = {
   condicion: ['Regular', 'Libre', 'Promocional'],
-  llamado: ['Primer Llamado', 'Segundo Llamado'],
   pago: ['Efectivo', 'Transferencia'],
 };
 
@@ -58,10 +59,12 @@ function doPost(e) {
 
     const comprobante = guardarComprobante_(body.comprobante, reg);
     if (reg.pago === 'Transferencia' && !comprobante) return json_({ ok: false, error: 'Falta el comprobante de pago' });
+    const fotosLibreta = guardarFotosLibreta_(body.fotosLibreta, reg);
 
     reg.id = Math.max(0, sheet.getLastRow() - 1) + 1;
     reg.fecha = new Date();
     reg.comprobanteUrl = comprobante ? comprobante.getUrl() : '';
+    reg.fotosLibretaUrls = fotosLibreta.map(f => f.getUrl());
 
     // La fila se guarda primero: si falla el mail, la inscripción no se pierde.
     sheet.appendRow(CAMPOS.map(c => celda_(valorCampo_(c, reg))));
@@ -98,16 +101,17 @@ function validar_(raw) {
   const t = (k, max) => String(raw[k] == null ? '' : raw[k]).trim().slice(0, max || 200);
   const reg = {
     email: t('email', 120).toLowerCase(), legajo: t('legajo', 20), nombre: t('nombre', 120), dni: t('dni', 12).replace(/\./g, ''),
-    condicion: t('condicion'), llamado: t('llamado'), carrera: t('carrera'), anio: t('anio', 20), materia: t('materia', 160), pago: t('pago'),
+    condicion: t('condicion'), carrera: t('carrera'), anio: t('anio', 20), materia: t('materia', 160), pago: t('pago'),
+    declaracionAceptada: raw.declaracionAceptada === true || raw.declaracionAceptada === 'true',
   };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reg.email)) return { error: 'Mail inválido' };
   if (!/^[\w.-]{1,20}$/.test(reg.legajo)) return { error: 'Legajo inválido' };
   if (reg.nombre.length < 3) return { error: 'Nombre inválido' };
   if (!/^\d{6,9}$/.test(reg.dni)) return { error: 'DNI inválido' };
   if (LISTAS.condicion.indexOf(reg.condicion) < 0) return { error: 'Condición inválida' };
-  if (LISTAS.llamado.indexOf(reg.llamado) < 0) return { error: 'Llamado inválido' };
   if (LISTAS.pago.indexOf(reg.pago) < 0) return { error: 'Modo de pago inválido' };
   if (!reg.carrera || !reg.anio || !reg.materia) return { error: 'Faltan carrera, año o materia' };
+  if (!reg.declaracionAceptada) return { error: 'Debe aceptar la declaración jurada' };
   return { registro: reg };
 }
 
@@ -126,7 +130,7 @@ function duplicada_(sheet, reg) {
   if (n < 1) return false;
   const filas = sheet.getRange(2, 1, n, CAMPOS.length).getValues();
   const i = c => CAMPOS.indexOf(c);
-  return filas.some(f => String(f[i('dni')]) === reg.dni && f[i('materia')] === reg.materia && f[i('llamado')] === reg.llamado
+  return filas.some(f => String(f[i('dni')]) === reg.dni && f[i('materia')] === reg.materia
     && f[i('carrera')] === reg.carrera);
 }
 
@@ -138,6 +142,8 @@ function valorCampo_(c, reg) {
     case 'modo_pago': return reg.pago;
     case 'comprobante': return reg.comprobanteUrl;
     case 'mail_enviado': return 'Pendiente';
+    case 'fotos_libreta': return (reg.fotosLibretaUrls || []).join('\n');
+    case 'declaracion_aceptada': return reg.declaracionAceptada ? 'Sí' : 'No';
     default: return reg[c];
   }
 }
@@ -169,6 +175,14 @@ function hoja_() {
   if (sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, CAMPOS.length).setValues([CAMPOS]).setFontWeight('bold');
     sheet.setFrozenRows(1);
+  } else {
+    const encabezados = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].map(String);
+    CAMPOS.forEach(campo => {
+      if (encabezados.indexOf(campo) < 0) {
+        sheet.getRange(1, sheet.getLastColumn() + 1).setValue(campo).setFontWeight('bold');
+        encabezados.push(campo);
+      }
+    });
   }
   return sheet;
 }
@@ -192,6 +206,24 @@ function guardarComprobante_(c, reg) {
   const nombre = ['comprobante', limpio_(reg.legajo), limpio_(reg.nombre), limpio_(reg.materia).slice(0, 40),
     Utilities.formatDate(new Date(), tz_(), 'yyyyMMdd_HHmmss')].join('_') + '.jpg';
   return carpeta_().createFile(Utilities.newBlob(bytes, 'image/jpeg', nombre));
+}
+
+function guardarFotosLibreta_(fotos, reg) {
+  if (fotos == null) return [];
+  if (!Array.isArray(fotos) || fotos.length > MAX_LIBRETA_IMAGENES) throw new Error('Cantidad de fotos de libreta inválida');
+  let totalBytes = 0;
+  const preparadas = fotos.map(foto => {
+    if (!foto || !/^image\//.test(String(foto.tipo)) || !foto.base64) throw new Error('Foto de libreta inválida');
+    const bytes = Utilities.base64Decode(String(foto.base64));
+    totalBytes += bytes.length;
+    if (bytes.length > MAX_IMAGEN_BYTES || totalBytes > MAX_LIBRETA_TOTAL_BYTES) throw new Error('Las fotos de la libreta son demasiado grandes');
+    return { foto: foto, bytes: bytes };
+  });
+  return preparadas.map((item, indice) => {
+    const nombre = ['libreta', limpio_(reg.legajo), limpio_(item.foto.materia).slice(0, 40), indice + 1,
+      Utilities.formatDate(new Date(), tz_(), 'yyyyMMdd_HHmmss')].join('_') + '.jpg';
+    return carpeta_().createFile(Utilities.newBlob(item.bytes, String(item.foto.tipo), nombre));
+  });
 }
 
 function limpio_(v) {
@@ -301,8 +333,10 @@ function constanciaPdfSimple_(reg) {
     + '<table style="border-collapse:collapse;width:100%">'
     + fila('Nombre y Apellido', reg.nombre) + fila('DNI', reg.dni) + fila('Legajo', reg.legajo) + fila('Mail', reg.email)
     + fila('Carrera', reg.carrera) + fila('Año', reg.anio) + fila('Materia', reg.materia)
-    + fila('Condición', reg.condicion) + fila('Llamado', reg.llamado) + fila('Modo de pago', reg.pago)
+    + fila('Condición', reg.condicion) + fila('Modo de pago', reg.pago)
     + fila('Comprobante de pago', reg.comprobanteUrl ? 'Recibido' : 'No adjuntado')
+    + fila('Fotos de libreta', String((reg.fotosLibretaUrls || []).length))
+    + fila('Declaración jurada', reg.declaracionAceptada ? 'Aceptada' : 'No aceptada')
     + fila('Fecha de inscripción', Utilities.formatDate(reg.fecha, tz_(), 'dd/MM/yyyy HH:mm'))
     + '</table><br><div style="font-size:11px;color:#555">Este comprobante acredita el registro de la inscripción. '
     + 'La validez del pago está sujeta a su verificación por la institución.</div></body></html>';
@@ -335,8 +369,8 @@ function constanciaPdf_(reg) {
 
     titulo_(body, 'Datos de la Mesa de Examen:');
     const tabla = body.appendTable([
-      ['Materia', 'Carrera', 'Año', 'Condición', 'Llamado'],
-      [reg.materia, reg.carrera, reg.anio, reg.condicion, reg.llamado],
+      ['Materia', 'Carrera', 'Año', 'Condición'],
+      [reg.materia, reg.carrera, reg.anio, reg.condicion],
     ]);
     tabla.setBorderColor('#9B9B9B').setBorderWidth(0.75);
     for (let i = 0; i < tabla.getNumRows(); i++) {
@@ -352,6 +386,8 @@ function constanciaPdf_(reg) {
     titulo_(body, 'Información de Pago:');
     campo_(body, 'Modo de pago', reg.pago);
     campo_(body, 'Comprobante de pago', reg.comprobanteUrl ? 'Recibido' : 'No adjuntado');
+    campo_(body, 'Fotos de libreta', String((reg.fotosLibretaUrls || []).length));
+    campo_(body, 'Declaración jurada', reg.declaracionAceptada ? 'Aceptada' : 'No aceptada');
     campo_(body, 'Fecha de emisión', Utilities.formatDate(reg.fecha, tz_(), 'dd/MM/yyyy HH:mm'));
     campo_(body, 'N° de inscripción', reg.id);
     espacio_(body, 10);
@@ -380,7 +416,7 @@ function enviarConstancia_(reg, pdf, comprobante) {
   if (pdf) adjuntos.push(pdf);
   if (comprobante) adjuntos.push(comprobante.getBlob());
   const cuerpo = ['Hola ' + reg.nombre + ',', '',
-    'Registramos tu inscripción a la mesa de examen de ' + reg.materia + ' (' + reg.llamado + ', condición ' + reg.condicion + ').',
+    'Registramos tu inscripción a la mesa de examen de ' + reg.materia + ' (condición ' + reg.condicion + ').',
     adjuntos.length ? 'Adjuntamos ' + (pdf ? 'el comprobante de inscripción' : '') + (pdf && comprobante ? ' y ' : '') + (comprobante ? 'el comprobante de pago que cargaste' : '') + '.' : '', '',
     'Saludos cordiales,', 'Escuela Superior de Música N° 6003'].join('\n');
   GmailApp.sendEmail(reg.email, 'Comprobante de inscripción a mesa de examen - ' + reg.materia, cuerpo,
@@ -393,7 +429,9 @@ function avisarSecretaria_(reg, pdf, comprobante) {
   if (comprobante) adjuntos.push(comprobante.getBlob());
   GmailApp.sendEmail(NOTIFY_EMAIL, 'Nueva inscripción a mesa: ' + reg.nombre + ' - ' + reg.materia,
     [reg.nombre + ' (DNI ' + reg.dni + ', legajo ' + reg.legajo + ')', reg.carrera + ' - ' + reg.anio + ' - ' + reg.materia,
-      reg.condicion + ' / ' + reg.llamado + ' / Pago: ' + reg.pago].join('\n'),
+      reg.condicion + ' / Pago: ' + reg.pago,
+      'Fotos de libreta: ' + (reg.fotosLibretaUrls || []).join('\n'),
+      'Declaración jurada aceptada: ' + (reg.declaracionAceptada ? 'Sí' : 'No')].join('\n'),
     { attachments: adjuntos, name: 'Inscripciones a mesas' });
 }
 
