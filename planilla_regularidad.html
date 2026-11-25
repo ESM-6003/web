@@ -126,8 +126,9 @@ const OTRA = "__otra__";
 // Carreras sin planilla no cargan inscriptos automáticamente.
 const INSCRIPCIONES = {
     "Trayecto Artístico Profesional (TAP)": {
-        sheetId: "1YoyK2aw8x-RJAANB4enPna8HWspLML8aAYr4D_epI2s", hoja: "Inscripciones",
-        // Catálogo de materias, profesores/as y comisiones del sistema de inscripciones. Se lee en vivo en cada carga.
+        sheetId: "1YoyK2aw8x-RJAANB4enPna8HWspLML8aAYr4D_epI2s", hoja: "Inscripciones", materiasDelCatalogo: true,
+        // El catálogo editable vive en Sheets; el archivo del repositorio es el respaldo base.
+        catalogoVivoUrl: "https://script.google.com/macros/s/AKfycbwKR8YP8OPyNsGysRNWqypqjN3Y7vTNMcyMC9IRMNGdmGAb6H_bRKocn6ZiZ5TmGLQ/exec",
         catalogoUrl: "https://raw.githubusercontent.com/ESM-6003/inscripciones_tap/main/materias_catalogo.js"
     },
     // En IM y Talleres la lista de materias también se toma en vivo del catálogo (agrupada por año)
@@ -136,7 +137,9 @@ const INSCRIPCIONES = {
         catalogoUrl: "https://raw.githubusercontent.com/ESM-6003/inscripciones_im/main/materias_catalogo.js"
     },
     "Talleres de Jóvenes y Adultos": {
-        sheetId: "1Mrfac8D86kZqDKJZJMR1qKe7j6E4bqTQKNPMTW_5TvY", hoja: "Inscripciones"
+        sheetId: "1Mrfac8D86kZqDKJZJMR1qKe7j6E4bqTQKNPMTW_5TvY", hoja: "Inscripciones", materiasDelCatalogo: true,
+        catalogoVivoUrl: "https://script.google.com/macros/s/AKfycbzhqW0IhVgLKrXx8WW6FIHAqLzsM4lyLAa_Z3Q-Lthuz1R_S4-aPXj4KiQBsp7QMhoJ9A/exec",
+        catalogoUrl: "https://raw.githubusercontent.com/ESM-6003/inscripciones_talleres/main/materias_catalogo.js"
     }
 };
 
@@ -183,10 +186,51 @@ const distintos = (arr, f) => [...new Set(arr.map(f).filter(Boolean))].sort((a, 
 // Comparación de nombres de docentes y comisiones sin tildes, mayúsculas ni espacios de más
 const plano = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
 
-// El archivo del repositorio es "window.MATERIAS_CATALOGO = {...};": se interpreta como JSON, sin ejecutar código remoto.
-// Si GitHub no responde se usa la última copia guardada en este navegador.
+// Consulta el mismo catálogo editable de Google Sheets que usa el formulario de inscripciones.
+function pedirCatalogoVivo(url) {
+    return new Promise((resolve, reject) => {
+        const cb = "__catalogo" + Date.now() + Math.random().toString(36).slice(2, 8);
+        const s = document.createElement("script");
+        let timeout;
+        const fin = () => {
+            clearTimeout(timeout);
+            delete window[cb];
+            s.remove();
+        };
+        window[cb] = d => {
+            fin();
+            if (!d || d.ok !== true) return reject(new Error(d && d.error || "No se pudo cargar el catálogo"));
+            resolve(d.catalog);
+        };
+        s.onerror = () => { fin(); reject(new Error("No se pudo conectar con el catálogo de inscripciones")); };
+        const endpoint = new URL(url);
+        endpoint.searchParams.set("action", "loadCatalog");
+        endpoint.searchParams.set("callback", cb);
+        timeout = setTimeout(() => { fin(); reject(new Error("Tiempo de espera agotado al cargar el catálogo")); }, 15000);
+        s.src = endpoint.toString();
+        document.head.appendChild(s);
+    });
+}
+
+// El archivo del repositorio ("window.MATERIAS_CATALOGO = {...};") es el respaldo base.
+// Si falla el servicio, se usa la última copia guardada en este navegador.
 async function pedirCatalogo(cfg) {
     const claveLocal = "catalogo|" + cfg.catalogoUrl;
+    const claveLocalVivo = "catalogo-vivo|" + cfg.catalogoVivoUrl;
+    let falloCatalogoVivo;
+    if (cfg.catalogoVivoUrl) {
+        try {
+            const filas = await pedirCatalogoVivo(cfg.catalogoVivoUrl);
+            if (Array.isArray(filas) && filas.length) {
+                localStorage.setItem(claveLocalVivo, JSON.stringify(filas));
+                return filas;
+            }
+        } catch (e) {
+            falloCatalogoVivo = e;
+            const copiaViva = localStorage.getItem(claveLocalVivo);
+            if (copiaViva) return JSON.parse(copiaViva);
+        }
+    }
     try {
         const r = await fetch(cfg.catalogoUrl, { cache: "no-cache" });
         if (!r.ok) throw new Error("HTTP " + r.status);
@@ -197,6 +241,7 @@ async function pedirCatalogo(cfg) {
     } catch (e) {
         const copia = localStorage.getItem(claveLocal);
         if (copia) return JSON.parse(copia);
+        if (falloCatalogoVivo) throw falloCatalogoVivo;
         throw e;
     }
 }
@@ -204,6 +249,19 @@ async function pedirCatalogo(cfg) {
 // Índice por nombre de materia normalizado: profesores/as y comisión -> profesor/a
 function indexarCatalogo(cat) {
     const idx = new Map();
+    if (Array.isArray(cat)) {
+        cat.forEach(fila => {
+            const k = normMateria(fila.materia);
+            if (!k) return;
+            const e = idx.get(k) || { profs: new Set(), coms: new Map() };
+            const profesor = String(fila.profesor || "").trim();
+            const comision = String(fila.comision == null ? "" : fila.comision).trim();
+            if (profesor) e.profs.add(profesor);
+            if (comision && !e.coms.has(comision)) e.coms.set(comision, profesor);
+            idx.set(k, e);
+        });
+        return idx;
+    }
     for (const [nombre, m] of Object.entries(cat)) {
         const k = normMateria(nombre);
         const e = idx.get(k) || { profs: new Set(), coms: new Map() };
@@ -225,7 +283,17 @@ const datosCatalogo = (c, forzar = false) => catalogoCrudo(c, forzar).then(cat =
 // Materias del catálogo agrupadas por año: { "1° Año": [materias] }
 function materiasDeCatalogo(cat) {
     const g = {};
-    for (const [nombre, m] of Object.entries(cat)) (g[`${(m.years || [])[0] || "?"}° Año`] ||= []).push(nombre);
+    if (Array.isArray(cat)) {
+        for (const fila of cat) {
+            const nombre = String(fila.materia || "").trim();
+            if (!nombre) continue;
+            const anio = fila.anio || fila.año || "?";
+            const materias = g[`${anio}° Año`] ||= [];
+            if (!materias.includes(nombre)) materias.push(nombre);
+        }
+    } else {
+        for (const [nombre, m] of Object.entries(cat)) (g[`${(m.years || [])[0] || "?"}° Año`] ||= []).push(nombre);
+    }
     return Object.fromEntries(Object.entries(g).sort(([a], [b]) => a.localeCompare(b, "es", { numeric: true })));
 }
 
@@ -344,7 +412,8 @@ function mostrar(renovar = false) {
     const listo = renovar ? prepararFiltros() : Promise.resolve();
     const ok = selC.value && materia();
     $("planilla").hidden = !ok;
-    $("cargarInscriptos").hidden = !INSCRIPCIONES[selC.value];
+    const btnCargar = $("cargarInscriptos");
+    if (btnCargar) btnCargar.hidden = !INSCRIPCIONES[selC.value];
     $("aviso").hidden = true;
     $("lblCom").hidden = !ok;
     if (!ok) return;
@@ -406,8 +475,8 @@ $("filas").addEventListener("change", guardar);
 $("agregar").onclick = () => { agregarFila(); $("filas").lastElementChild.querySelector(".legajo").focus(); };
 // silencioso = carga automática al elegir la materia (sin alertas si no hay inscriptos)
 async function cargarInscriptos(silencioso = false) {
-    const btn = $("cargarInscriptos"), txt = btn.textContent, k = clave();
-    btn.disabled = true; btn.textContent = "Cargando inscriptos...";
+    const btn = $("cargarInscriptos"), txt = btn ? btn.textContent : "", k = clave();
+    if (btn) { btn.disabled = true; btn.textContent = "Cargando inscriptos..."; }
     try {
         const todos = await datosCarrera(selC.value, !silencioso);
         if (k !== clave()) return; // cambió la selección mientras cargaba
@@ -441,7 +510,7 @@ async function cargarInscriptos(silencioso = false) {
     } catch (e) {
         if (!silencioso) alert("No se pudieron obtener los inscriptos: " + e.message);
     } finally {
-        btn.disabled = false; btn.textContent = txt;
+        if (btn) { btn.disabled = false; btn.textContent = txt; }
     }
 }
 $("guardar").onclick = () => enviarASheets();
