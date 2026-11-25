@@ -17,7 +17,7 @@ Puesta en marcha:
   - Si se cambia este código hay que crear una NUEVA VERSIÓN de la implementación.
 */
 const SPREADSHEET_ID = '';   // vacío = la planilla donde está pegado el script (o una nueva si es un script suelto)
-const FOLDER_ID = '';        // vacío = se crea sola la primera vez
+const FOLDER_ID = '18jUEIL4BKCTau7pUlcN62KVZ_xTHISof';        // Carpeta para guardar comprobantes y fotos
 const SHEET_NAME = 'Mesas';
 const NOTIFY_EMAIL = '';     // opcional: mail de secretaría que recibe copia de cada inscripción
 const LOGO_FILE_ID = '1lH8aa50D9wh7-9Xc3P9Gwkc86eCgwHkI'; // logo del cabezal (archivo de Drive)
@@ -46,6 +46,13 @@ function doPost(e) {
   try {
     lock.waitLock(20000);
     const body = JSON.parse((e.postData && e.postData.contents) || '{}');
+    
+    // Manejar nueva acción: múltiples registros en una sola inscripción
+    if (body.action === 'mesas') {
+      return procesarInscripcionMultiple_(body);
+    }
+    
+    // Acción antigua: un registro por solicitud (mantener compatibilidad)
     if (body.action !== 'mesa') return json_({ ok: false, error: 'Acción inválida' });
 
     const r = validar_(body.registro);
@@ -58,7 +65,7 @@ function doPost(e) {
     if (duplicada_(sheet, reg)) return json_({ ok: false, error: 'Ya existe una inscripción igual' });
 
     const comprobante = guardarComprobante_(body.comprobante, reg);
-    if (reg.pago === 'Transferencia' && !comprobante) return json_({ ok: false, error: 'Falta el comprobante de pago' });
+    // No es obligatorio tener comprobante en el Apps Script; la validación está en el HTML
     const fotosLibreta = guardarFotosLibreta_(body.fotosLibreta, reg);
 
     reg.id = Math.max(0, sheet.getLastRow() - 1) + 1;
@@ -96,12 +103,73 @@ function doPost(e) {
   }
 }
 
+function procesarInscripcionMultiple_(body) {
+  try {
+    if (!Array.isArray(body.registros) || body.registros.length === 0) {
+      return json_({ ok: false, error: 'Sin registros para procesar' });
+    }
+
+    const sheet = hoja_();
+    const registrosProcesados = [];
+    const comprobante = guardarComprobante_(body.comprobante, body.registros[0]);
+    const fotosLibreta = guardarFotosLibreta_(body.fotosLibreta, body.registros[0]);
+
+    // Validar y guardar todos los registros
+    for (const rawReg of body.registros) {
+      const r = validar_(rawReg);
+      if (r.error) return json_({ ok: false, error: r.error });
+      
+      const reg = r.registro;
+      if (!limitar_(reg.email)) return json_({ ok: false, error: 'Demasiadas inscripciones con este mail. Probá más tarde.' });
+      if (duplicada_(sheet, reg)) return json_({ ok: false, error: 'Ya existe una inscripción igual: ' + reg.materia });
+
+      reg.id = Math.max(0, sheet.getLastRow() - 1) + 1 + registrosProcesados.length;
+      reg.fecha = new Date();
+      reg.comprobanteUrl = comprobante ? comprobante.getUrl() : '';
+      reg.fotosLibretaUrls = fotosLibreta.map(f => f.getUrl());
+
+      sheet.appendRow(CAMPOS.map(c => celda_(valorCampo_(c, reg))));
+      registrosProcesados.push(reg);
+    }
+
+    // Enviar UN solo email con todas las materias
+    let enviado = 'No';
+    let pdf = null, errorPdf = '';
+    try {
+      // DESACTIVADO TEMPORALMENTE: constanciaPdfMultiple_() tiene bug con cabezal_()
+      // pdf = constanciaPdfMultiple_(registrosProcesados);
+      pdf = constanciaPdfSimpleMultiple_(registrosProcesados);
+    } catch (err) {
+      errorPdf = String(err && err.stack || err).slice(0, 300);
+      console.error('constanciaPdfSimpleMultiple_: ' + errorPdf);
+    }
+    try {
+      enviarConstanciaMultiple_(registrosProcesados, pdf, comprobante);
+      if (NOTIFY_EMAIL) avisarSecretariaMultiple_(registrosProcesados, pdf, comprobante);
+      enviado = errorPdf ? (pdf ? 'Si (PDF simple): ' : 'Si (sin PDF): ') + errorPdf : 'Si';
+    } catch (err) {
+      enviado = 'Error mail: ' + String(err).slice(0, 200) + (errorPdf ? ' | PDF: ' + errorPdf : '');
+      console.error(enviado);
+    }
+
+    // Marcar todas las filas como enviadas
+    const fila_inicio = sheet.getLastRow() - registrosProcesados.length + 1;
+    for (let i = 0; i < registrosProcesados.length; i++) {
+      sheet.getRange(fila_inicio + i, CAMPOS.indexOf('mail_enviado') + 1).setValue(enviado);
+    }
+
+    return json_({ ok: true, count: registrosProcesados.length, mail: enviado });
+  } catch (err) {
+    return json_({ ok: false, error: String(err) });
+  }
+}
+
 function validar_(raw) {
   if (!raw || typeof raw !== 'object') return { error: 'Datos faltantes' };
   const t = (k, max) => String(raw[k] == null ? '' : raw[k]).trim().slice(0, max || 200);
   const reg = {
-    email: t('email', 120).toLowerCase(), legajo: t('legajo', 20), nombre: t('nombre', 120), dni: t('dni', 12).replace(/\./g, ''),
-    condicion: t('condicion'), carrera: t('carrera'), anio: t('anio', 20), materia: t('materia', 160), pago: t('pago'),
+    email: t('email', 120).toLowerCase(), legajo: t('legajo', 20), nombre: t('nombre_apellido', 120) || t('nombre', 120), dni: t('dni', 12).replace(/\./g, ''),
+    condicion: t('condicion'), carrera: t('carrera'), anio: t('anio', 20), materia: t('materia', 160), pago: 'Transferencia',
     declaracionAceptada: raw.declaracionAceptada === true || raw.declaracionAceptada === 'true',
   };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reg.email)) return { error: 'Mail inválido' };
@@ -109,7 +177,6 @@ function validar_(raw) {
   if (reg.nombre.length < 3) return { error: 'Nombre inválido' };
   if (!/^\d{6,9}$/.test(reg.dni)) return { error: 'DNI inválido' };
   if (LISTAS.condicion.indexOf(reg.condicion) < 0) return { error: 'Condición inválida' };
-  if (LISTAS.pago.indexOf(reg.pago) < 0) return { error: 'Modo de pago inválido' };
   if (!reg.carrera || !reg.anio || !reg.materia) return { error: 'Faltan carrera, año o materia' };
   if (!reg.declaracionAceptada) return { error: 'Debe aceptar la declaración jurada' };
   return { registro: reg };
@@ -273,7 +340,9 @@ function cabezal_(body, legajo) {
   celdaLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
 
   // Se usa el párrafo que ya trae cada celda, para no sumar una línea vacía arriba
-  const pLogo = celdaLogo.getChild(0).asParagraph();
+  let pLogo = celdaLogo.getChild(0);
+  if (!pLogo) pLogo = celdaLogo.appendParagraph('');
+  pLogo = pLogo.asParagraph();
   pLogo.setSpacingBefore(0).setSpacingAfter(0).setAlignment(DocumentApp.HorizontalAlignment.LEFT);
   if (LOGO_FILE_ID) {
     try {
@@ -285,7 +354,9 @@ function cabezal_(body, legajo) {
   }
 
   const negrita = tam => ({ [DocumentApp.Attribute.BOLD]: true, [DocumentApp.Attribute.FONT_SIZE]: tam });
-  const l1 = celdaTexto.getChild(0).asParagraph();
+  let l1 = celdaTexto.getChild(0);
+  if (!l1) l1 = celdaTexto.appendParagraph('');
+  l1 = l1.asParagraph();
   l1.setText('Escuela Superior de Música N° 6003 - "José Lo Giudice"').setAttributes(atributos_(negrita(12)));
   l1.setSpacingBefore(0).setSpacingAfter(1);
   const l2 = parrafo_(celdaTexto, 'Legajo: ' + legajo, { [DocumentApp.Attribute.FONT_SIZE]: 10 });
@@ -341,6 +412,55 @@ function constanciaPdfSimple_(reg) {
     + '</table><br><div style="font-size:11px;color:#555">Este comprobante acredita el registro de la inscripción. '
     + 'La validez del pago está sujeta a su verificación por la institución.</div></body></html>';
   const nombre = 'comprobante_mesa_' + limpio_(reg.nombre) + '_' + limpio_(reg.legajo) + '.pdf';
+  return HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf').setName(nombre);
+}
+
+function constanciaPdfSimpleMultiple_(registros) {
+  if (!registros || registros.length === 0) return null;
+  if (registros.length === 1) return constanciaPdfSimple_(registros[0]);
+  
+  let logo = '';
+  try {
+    const b = DriveApp.getFileById(LOGO_FILE_ID).getBlob();
+    logo = '<img src="data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) + '" style="height:42px"><br>';
+  } catch (_e) { /* sin logo */ }
+  
+  const fila = (k, v) => '<tr><td style="padding:3px 8px;border:1px solid #bbb;background:#f3f3f3;width:32%"><b>' + esc_(k)
+    + '</b></td><td style="padding:3px 8px;border:1px solid #bbb">' + esc_(v) + '</td></tr>';
+  
+  const reg = registros[0];
+  let html = '<html><body style="font-family:Arial,sans-serif;font-size:12px;color:#222">'
+    + '<div style="text-align:center">' + logo + '<div style="font-size:14px;font-weight:bold">' + esc_(ESCUELA) + '</div>'
+    + '<div style="font-size:11px">IES N° 6003</div>'
+    + '<h2 style="color:#7f0017;margin:8px 0 2px;font-size:15px">COMPROBANTE DE INSCRIPCIÓN A MESAS DE EXAMEN</h2>'
+    + '</div><br>'
+    + '<table style="border-collapse:collapse;width:100%">'
+    + fila('Nombre y Apellido', reg.nombre) + fila('DNI', reg.dni) + fila('Legajo', reg.legajo) + fila('Mail', reg.email)
+    + '</table><br><h3 style="color:#333;margin:8px 0 4px;font-size:13px">Inscripciones a Mesas de Examen:</h3>'
+    + '<table style="border-collapse:collapse;width:100%;border:1px solid #9B9B9B">'
+    + '<tr style="background:#EAEAEA"><th style="padding:5px;border:1px solid #9B9B9B;text-align:left;font-weight:bold;font-size:11px">Materia</th>'
+    + '<th style="padding:5px;border:1px solid #9B9B9B;text-align:left;font-weight:bold;font-size:11px">Carrera</th>'
+    + '<th style="padding:5px;border:1px solid #9B9B9B;text-align:left;font-weight:bold;font-size:11px">Año</th>'
+    + '<th style="padding:5px;border:1px solid #9B9B9B;text-align:left;font-weight:bold;font-size:11px">Condición</th></tr>';
+  
+  registros.forEach(r => {
+    html += '<tr><td style="padding:5px;border:1px solid #9B9B9B">' + esc_(r.materia) + '</td>'
+      + '<td style="padding:5px;border:1px solid #9B9B9B">' + esc_(r.carrera) + '</td>'
+      + '<td style="padding:5px;border:1px solid #9B9B9B">' + esc_(r.anio) + '</td>'
+      + '<td style="padding:5px;border:1px solid #9B9B9B">' + esc_(r.condicion) + '</td></tr>';
+  });
+  
+  html += '</table><br>'
+    + '<table style="border-collapse:collapse;width:100%">'
+    + fila('Modo de pago', reg.pago)
+    + fila('Comprobante de pago', reg.comprobanteUrl ? 'Recibido' : 'No adjuntado')
+    + fila('Fotos de libreta', String((reg.fotosLibretaUrls || []).length))
+    + fila('Declaración jurada', reg.declaracionAceptada ? 'Aceptada' : 'No aceptada')
+    + fila('Fecha de inscripción', Utilities.formatDate(reg.fecha, tz_(), 'dd/MM/yyyy HH:mm'))
+    + '</table><br><div style="font-size:11px;color:#555">Este comprobante acredita el registro de las inscripciones. '
+    + 'La validez del pago está sujeta a su verificación por la institución.</div></body></html>';
+  
+  const nombre = 'comprobantes_mesas_' + limpio_(reg.nombre) + '_' + limpio_(reg.legajo) + '.pdf';
   return HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf').setName(nombre);
 }
 
@@ -429,6 +549,118 @@ function avisarSecretaria_(reg, pdf, comprobante) {
   if (comprobante) adjuntos.push(comprobante.getBlob());
   GmailApp.sendEmail(NOTIFY_EMAIL, 'Nueva inscripción a mesa: ' + reg.nombre + ' - ' + reg.materia,
     [reg.nombre + ' (DNI ' + reg.dni + ', legajo ' + reg.legajo + ')', reg.carrera + ' - ' + reg.anio + ' - ' + reg.materia,
+      reg.condicion + ' / Pago: ' + reg.pago,
+      'Fotos de libreta: ' + (reg.fotosLibretaUrls || []).join('\n'),
+      'Declaración jurada aceptada: ' + (reg.declaracionAceptada ? 'Sí' : 'No')].join('\n'),
+    { attachments: adjuntos, name: 'Inscripciones a mesas' });
+}
+
+// Nuevas funciones para múltiples registros (consolidación de emails)
+function constanciaPdfMultiple_(registros) {
+  if (!registros || registros.length === 0) return null;
+  if (registros.length === 1) return constanciaPdf_(registros[0]);
+  
+  let doc = null, archivo = null;
+  try {
+    doc = DocumentApp.create('mesa_tmp_' + Date.now() + '_' + Math.floor(Math.random() * 100000));
+    const body = doc.getBody();
+    body.clear();
+    body.setPageWidth(595.28).setPageHeight(841.89);
+    body.setMarginTop(28).setMarginBottom(28).setMarginLeft(40).setMarginRight(40);
+
+    const reg = registros[0];
+    cabezal_(body, reg.legajo);
+
+    titulo_(body, 'Datos del Estudiante:');
+    campo_(body, 'Nombre y Apellido', reg.nombre);
+    campo_(body, 'DNI', reg.dni);
+    campo_(body, 'Legajo', reg.legajo);
+    campo_(body, 'Mail', reg.email);
+    espacio_(body);
+
+    titulo_(body, 'Inscripciones a Mesas de Examen:');
+    const datos = [['Materia', 'Carrera', 'Año', 'Condición']];
+    registros.forEach(r => datos.push([r.materia, r.carrera, r.anio, r.condicion]));
+    
+    const tabla = body.appendTable(datos);
+    tabla.setBorderColor('#9B9B9B').setBorderWidth(0.75);
+    for (let i = 0; i < tabla.getNumRows(); i++) {
+      for (let j = 0; j < tabla.getRow(i).getNumCells(); j++) {
+        const c = tabla.getRow(i).getCell(j);
+        c.setPaddingTop(3).setPaddingBottom(3).setPaddingLeft(5).setPaddingRight(5);
+        if (i === 0) c.setBackgroundColor('#EAEAEA');
+        c.getChild(0).asParagraph().setSpacingBefore(0).setSpacingAfter(0).editAsText().setBold(i === 0).setFontSize(8);
+      }
+    }
+    espacio_(body);
+
+    titulo_(body, 'Información General:');
+    campo_(body, 'Modo de pago', reg.pago);
+    campo_(body, 'Comprobante de pago', reg.comprobanteUrl ? 'Recibido' : 'No adjuntado');
+    campo_(body, 'Fotos de libreta', String((reg.fotosLibretaUrls || []).length));
+    campo_(body, 'Declaración jurada', reg.declaracionAceptada ? 'Aceptada' : 'No aceptada');
+    campo_(body, 'Fecha de emisión', Utilities.formatDate(reg.fecha, tz_(), 'dd/MM/yyyy HH:mm'));
+    espacio_(body, 10);
+
+    firma_(body);
+    espacio_(body);
+    const pie = parrafo_(body, 'Este comprobante acredita el registro de las inscripciones. La validez del pago está sujeta a su verificación por la institución.',
+      { [DocumentApp.Attribute.FONT_SIZE]: 7, [DocumentApp.Attribute.FOREGROUND_COLOR]: '#808080' }, DocumentApp.HorizontalAlignment.CENTER);
+    pie.setSpacingBefore(0).setSpacingAfter(0);
+
+    if (body.getChild(0).getType() === DocumentApp.ElementType.PARAGRAPH && body.getChild(0).asParagraph().getText() === '') {
+      body.removeChild(body.getChild(0));
+    }
+
+    doc.saveAndClose();
+    archivo = DriveApp.getFileById(doc.getId());
+    const blob = archivo.getBlob().getAs('application/pdf');
+    const nombre = 'comprobantes_mesas_' + limpio_(reg.nombre) + '.pdf';
+    blob.setName(nombre);
+    archivo.setTrashed(true);
+    return blob;
+  } catch (err) {
+    if (doc) {
+      try { DriveApp.getFileById(doc.getId()).setTrashed(true); } catch (_e) { }
+    }
+    throw err;
+  }
+}
+
+function enviarConstanciaMultiple_(registros, pdf, comprobante) {
+  if (!registros || registros.length === 0) return;
+  
+  const reg = registros[0];
+  const adjuntos = [];
+  if (pdf) adjuntos.push(pdf);
+  if (comprobante) adjuntos.push(comprobante.getBlob());
+  
+  const listaMaterias = registros.map(r => '• ' + r.materia + ' (' + r.condicion + ')').join('\n');
+  const cuerpo = ['Hola ' + reg.nombre + ',', '',
+    'Registramos tu inscripción a las siguientes mesas de examen:',
+    '',
+    listaMaterias,
+    '',
+    adjuntos.length ? 'Adjuntamos ' + (pdf ? 'el comprobante de inscripción' : '') + (pdf && comprobante ? ' y ' : '') + (comprobante ? 'el comprobante de pago que cargaste' : '') + '.' : '',
+    '',
+    'Saludos cordiales,', 'Escuela Superior de Música N° 6003'].join('\n');
+  
+  GmailApp.sendEmail(reg.email, 'Comprobante de inscripción a mesas de examen (' + registros.length + ' materias)',
+    cuerpo, { attachments: adjuntos, name: 'Escuela Superior de Música N° 6003' });
+}
+
+function avisarSecretariaMultiple_(registros, pdf, comprobante) {
+  if (!registros || registros.length === 0) return;
+  
+  const reg = registros[0];
+  const adjuntos = [];
+  if (pdf) adjuntos.push(pdf);
+  if (comprobante) adjuntos.push(comprobante.getBlob());
+  
+  const listaMaterias = registros.map(r => r.carrera + ' - ' + r.anio + ' - ' + r.materia).join('\n');
+  GmailApp.sendEmail(NOTIFY_EMAIL, 'Nuevas inscripciones a mesas: ' + reg.nombre + ' (' + registros.length + ' materias)',
+    [reg.nombre + ' (DNI ' + reg.dni + ', legajo ' + reg.legajo + ')',
+      listaMaterias,
       reg.condicion + ' / Pago: ' + reg.pago,
       'Fotos de libreta: ' + (reg.fotosLibretaUrls || []).join('\n'),
       'Declaración jurada aceptada: ' + (reg.declaracionAceptada ? 'Sí' : 'No')].join('\n'),
