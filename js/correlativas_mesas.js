@@ -208,3 +208,15 @@ const CORRELATIVAS_MESAS = {
         ]
     }
 };
+
+// Talleres de Jóvenes y Adultos - sin reglas de correlativas
+CORRELATIVAS_MESAS["Talleres de Jóvenes y Adultos"] = {
+    courses: {},
+    rules: []
+};
+
+function buscarRegla(carrera, materia) {
+    const plan = CORRELATIVAS_MESAS[carrera];
+    if (!plan) return null;
+    return plan.rules.find(r => r.title === materia) || null;
+}
