@@ -149,7 +149,7 @@
 <script src="js/correlativas_mesas.js"></script>
 <script>
 // URL de la aplicación web de Apps Script (ver apps_script_mesas.gs). Vacío = no envía.
-const MESAS_URL = "https://script.google.com/macros/s/AKfycbw9W6ONxLtr7rwhl06X4rHcI784mGRkIIaszMLIpewsXyuZjLWHG-db5Q3mB17MxAMU2A/exec";
+const MESAS_URL = "https://script.google.com/macros/s/AKfycbzv35cr4HFSbOu9_KulWiPOgbo1zahwJJrT9ahrCNibqGyRMgH75T5gAqKvuYfpkNBf/exec";
 
 // Planillas de inscripciones de donde se precargan nombre, apellido y DNI a partir del legajo.
 const FUENTES_LEGAJO = [
@@ -175,7 +175,7 @@ function llenar(sel, vacio, valores) {
 
 let materiasSeleccionadas = [];
 const MAX_MATERIAS = 4;
-let fotosLibreta = [];
+let fotosLibreta = {};
 let aceptaDeclaracion = false;
 let revisionCorrelativas = 0;
 let comprobante = null;
@@ -530,27 +530,30 @@ function validar() {
     const lista = codigos => codigos.map(codigo => cursos[codigo.trim()] || `Correlativa ${codigo.trim()} (verificar plan)`);
     
     // Validar que todas las aprobadas tengan foto (obligatorias)
-    materiasSeleccionadas.forEach((materia, materiaIdx) => {
+    for (let materiaIdx = 0; materiaIdx < materiasSeleccionadas.length; materiaIdx++) {
+        const materia = materiasSeleccionadas[materiaIdx];
         const regla = buscarRegla(v("carrera"), materia);
         const aprobadas = regla ? lista(regla.approved) : [];
         
-        aprobadas.forEach((_, idx) => {
+        for (let idx = 0; idx < aprobadas.length; idx++) {
             if (!fotosLibreta[`aprobada_${materiaIdx}_${idx}`]) {
                 return `Falta la foto de libreta: ${materia} - ${aprobadas[idx]}`;
             }
-        });
-    });
+        }
+    }
     
     // Comprobante: obligatorio si es "Libre" o si hay materias con correlativas
     const esLibre = v("condicion") === "Libre";
     let tieneCorrelativas = false;
     
-    materiasSeleccionadas.forEach(materia => {
+    for (let i = 0; i < materiasSeleccionadas.length; i++) {
+        const materia = materiasSeleccionadas[i];
         const regla = buscarRegla(v("carrera"), materia);
         if (regla && (regla.regular.length > 0 || regla.approved.length > 0)) {
             tieneCorrelativas = true;
+            break;
         }
-    });
+    }
     
     if ((esLibre || tieneCorrelativas) && !comprobante) {
         return "Adjuntá el comprobante de la transferencia.";
@@ -577,26 +580,23 @@ $("form").addEventListener("submit", async e => {
     }));
     
     try {
-        // Enviar cada materia como un registro separado
-        for (const registro of registros) {
-            await fetch(MESAS_URL, {
-                method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" },
-                body: JSON.stringify({
-                    action: "mesa",
-                    registro,
-                    comprobante: comprobante && (Array.isArray(comprobante) 
-                        ? comprobante.map(c => ({ nombre: c.nombre, tipo: c.tipo, base64: c.base64 }))
-                        : { nombre: comprobante.nombre, tipo: comprobante.tipo, base64: comprobante.base64 }),
-                    fotosLibreta: Object.entries(fotosLibreta)
-                        .filter(([key]) => key.includes("_0_"))
-                        .map(([, value]) => value && { nombre: value.nombre, tipo: value.tipo, base64: value.base64, materia: value.materia })
-                        .filter(Boolean)
-                })
-            });
-        }
+        // Enviar todos los registros en una sola solicitud
+        await fetch(MESAS_URL, {
+            method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" },
+            body: JSON.stringify({
+                action: "mesas",
+                registros: registros,
+                comprobante: comprobante && (Array.isArray(comprobante) 
+                    ? comprobante.map(c => ({ nombre: c.nombre, tipo: c.tipo, base64: c.base64 }))
+                    : { nombre: comprobante.nombre, tipo: comprobante.tipo, base64: comprobante.base64 }),
+                fotosLibreta: Object.entries(fotosLibreta)
+                    .map(([, value]) => value && { nombre: value.nombre, tipo: value.tipo, base64: value.base64, materia: value.materia })
+                    .filter(Boolean)
+            })
+        });
         mostrar(`¡Listo! Registramos tu inscripción a ${materiasSeleccionadas.length} materia${materiasSeleccionadas.length > 1 ? "s" : ""}. En unos minutos te enviamos el comprobante a ${v("email")}. Si no lo ves, revisá la carpeta de spam.`, "ok");
         $("form").reset(); comprobante = null; $("previews").innerHTML = "";
-        fotosLibreta = []; aceptaDeclaracion = false;
+        fotosLibreta = {}; aceptaDeclaracion = false;
         materiasSeleccionadas = [];
         $("aceptar").setAttribute("aria-pressed", "false");
         $("aceptar").textContent = "Estoy de acuerdo";
